@@ -27,11 +27,12 @@ button {
   background-color: rgb(82, 80, 80);
 }
 .delete-button{
-  background-color: red;
+  background-color: white;
+  color: red;
 }
 
 .delete-button:hover{
-  background-color: rgb(146, 1, 1);
+  color: rgb(146, 1, 1);
 }
 .move-button{
   background-color: green;
@@ -41,11 +42,13 @@ button {
   background-color: rgb(2, 71, 2);
 }
 .edit-button, .save-button{
-  background-color: blue;
+  background-color: white;
+  color: blue;
 }
 
 .edit-button:hover, .save-button:hover{
-  background-color: rgb(1, 1, 145);
+  background-color: white;
+  color: rgb(1, 1, 145);
 }
 
 input[type="text"]{
@@ -93,4 +96,9 @@ li{
 
 .cancel-button:hover {
   background-color: #d32f2f;
+}
+
+.completed-task {
+  text-decoration: line-through;
+  color: gray;
 }

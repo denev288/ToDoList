@@ -1,6 +1,9 @@
 import "../css/ToDoComponentStyle.css";
-
-import { SetStateAction, useState } from "react";
+import { DndContext, useDraggable, useDroppable } from "@dnd-kit/core";
+import axios from "axios";
+import { SetStateAction, useEffect, useState } from "react";
+import { FaRegTrashAlt } from "react-icons/fa";
+import { CiEdit } from "react-icons/ci";
 
 function ToDoComponent() {
   const [tasks, setTasks] = useState([]);
@@ -9,21 +12,62 @@ function ToDoComponent() {
   const [editingIndex, setEditingIndex] = useState(null);
   const [editingTask, setEditingTask] = useState("");
 
+  useEffect(() => {
+    axios
+      .get("http://localhost:3004/tasks")
+      .then((response) => {
+        setTasks(response.data);
+      })
+      .catch((err) => console.error("Error fetching tasks on load:", err));
+  }, []);
+
   function handleInputChange(event) {
     setNewTask(event.target.value);
   }
 
-  function addTask() {
-    if (newTask.trim() !== "") {
-      setTasks(() => [...tasks, newTask]);
-      setNewTask("");
+  function handleAdd(e) {
+    e.preventDefault();
+    if (newTask.trim() === "") {
+      alert("Task cannot be empty");
+      return;
     }
+    const taskExists = tasks.some(
+      (task) => task.text.toLowerCase() === newTask.toLowerCase()
+    );
+    if (taskExists) {
+      console.log("Task already exists");
+      alert("Task already exists");
+      return;
+    }
+    axios
+      .post("http://localhost:3004/add", { text: newTask }) 
+      .then(() => {
+
+        axios
+          .get("http://localhost:3004/tasks")
+          .then((response) => {
+            setTasks(response.data);
+            setNewTask("");
+          })
+          .catch((err) => console.error("Error fetching tasks:", err));
+      })
+      .catch((err) => console.error("Error adding task:", err));
   }
 
   function deleteTask(index: number) {
-    const updatedTasks = tasks.filter((_, i) => i !== index);
-    setTasks(updatedTasks);
+    const taskId = tasks[index]._id;
+  
+    axios
+      .delete(`http://localhost:3004/delete/${taskId}`)
+      .then(() => {
+
+        // Remove the task from the frontend
+        const updatedTasks = tasks.filter((_, i) => i !== index);
+        setTasks(updatedTasks);
+      })
+      .catch((err) => console.error("Error deleting task:", err));
   }
+  
 
   function moveTaskUp(index) {
     if (index > 0) {
@@ -46,23 +90,76 @@ function ToDoComponent() {
     }
   }
 
-  function startEditing(index: number | SetStateAction<null>) {
+  function startEditing(index: number) {
     setEditing(true);
     setEditingIndex(index);
-    setEditingTask(tasks[index]);
+    setEditingTask(tasks[index].text);
   }
 
-  function handleEditChange(event: { target: { value: SetStateAction<string>; }; }) {
+  function handleEditChange(event: {
+    target: { value: SetStateAction<string> };
+  }) {
     setEditingTask(event.target.value);
   }
 
-  function saveEdit() {
+  function saveEdit(index: number) {
+    // if (index === null || tasks[index] === undefined) {
+    //   console.error("Invalid index for saveEdit:", index);
+    //   return;
+    // }
+  
+    const taskId = tasks[index]._id;
+    const updatedText = editingTask;
+
+    if (updatedText.trim() === "") {
+      alert("Task cannot be empty");
+      return;
+    }
+    updatedText.trim() === tasks[index].text ? alert("Task is the same") 
+    :  
+    axios
+      .patch(`http://localhost:3004/edit/${taskId}`, { text: updatedText })
+      .then(() => {
+        const updatedTasks = [...tasks];
+        updatedTasks[index].text = updatedText;
+        setTasks(updatedTasks);
+        setEditing(false);
+        setEditingIndex(null);
+        setEditingTask("");
+      })
+      .catch((err) => console.error("Error updating task:", err));
+  }
+
+  function handleDragEvent(event: any) {
+    const { active, over } = event;
+
+    if (!over) return;
+
+    const oldIndex = active.id;
+    const newIndex = over.id;
+
+    if (oldIndex === newIndex) return;
+
     const updatedTasks = [...tasks];
-    updatedTasks[editingIndex] = editingTask;
+    const [movedTask] = updatedTasks.splice(oldIndex, 1);
+    updatedTasks.splice(newIndex, 0, movedTask);
+
     setTasks(updatedTasks);
-    setEditing(false);
-    setEditingIndex(null);
-    setEditingTask("");
+  }
+
+  function taskCompleted(index) {
+    const taskId = tasks[index]._id;
+    const updatedCompleted = !tasks[index].completed;
+
+    axios
+      .patch(`http://localhost:3004/update/${taskId}`, { completed: updatedCompleted })
+      .then(() => {
+
+        const updatedTasks = [...tasks];
+        updatedTasks[index].completed = updatedCompleted;
+        setTasks(updatedTasks);
+      })
+      .catch((err) => console.error("Error updating task completion:", err));
   }
 
   return (
@@ -70,15 +167,17 @@ function ToDoComponent() {
       <div className="to-do-list">
         <h1>To Do List</h1>
         <div>
-          <input
-            type="text"
-            placeholder="Add a task..."
-            value={newTask}
-            onChange={handleInputChange}
-          />
-          <button className="add-button" onClick={addTask}>
-            Add
-          </button>
+        <form onSubmit={handleAdd}>
+            <input
+              type="text"
+              placeholder="Add a task..."
+              value={newTask}
+              onChange={handleInputChange}
+            />
+            <button className="add-button" type="submit">
+              Add
+            </button>
+          </form>
           <ol>
             {tasks.length > 0 ? (
               tasks.map((task, index) => (
@@ -90,7 +189,7 @@ function ToDoComponent() {
                         value={editingTask}
                         onChange={handleEditChange}
                       />
-                      <button className="save-button" onClick={saveEdit}>
+                      <button className="save-button" onClick={() => saveEdit(editingIndex)}>
                         Save
                       </button>
                       <button
@@ -106,30 +205,29 @@ function ToDoComponent() {
                     </>
                   ) : (
                     <>
-                      <span className="text">{task}</span>
+                      <input
+                        type="checkbox"
+                        checked={task.completed}
+                        onChange={() => taskCompleted(index)}
+                      />
+                      <span
+                        className={`text ${
+                          task.completed ? "completed-task" : ""
+                        }`}
+                      >
+                        {task.text}
+                      </span>
                       <button
                         className="delete-button"
                         onClick={() => deleteTask(index)}
                       >
-                        Delete
-                      </button>
-                      <button
-                        className="move-button"
-                        onClick={() => moveTaskUp(index)}
-                      >
-                        Up
-                      </button>
-                      <button
-                        className="move-button"
-                        onClick={() => moveTaskDown(index)}
-                      >
-                        Down
-                      </button>
+                        <FaRegTrashAlt />
+                      </button>                 
                       <button
                         className="edit-button"
                         onClick={() => startEditing(index)}
                       >
-                        Edit
+                        <CiEdit />
                       </button>
                     </>
                   )}
@@ -146,55 +244,3 @@ function ToDoComponent() {
 }
 
 export default ToDoComponent;
-
-// function ToDoComponent() {
-//   const [inputValue, setInputValue] = useState("");
-//   const [todos, setTodos] = useState<string[]>([]);
-
-//   function handleInputChange (event: React.ChangeEvent<HTMLInputElement>) {
-//     setInputValue(event.target.value);
-//   };
-
-//   function insertTodos (event: React.FormEvent) {
-//     event.preventDefault();
-//     if (inputValue.trim()) {
-//       setTodos([...todos, inputValue]);
-//       setInputValue("");
-//     }
-//   };
-
-//   return (
-//     <div className="todoapp stack-large">
-//       <h1>To do list</h1>
-//       <form onSubmit={insertTodos}>
-//         <h2 className="label-wrapper">
-//           <label htmlFor="new-todo-input" className="label__lg">
-//             Insert what you need to do for the day!
-//           </label>
-//         </h2>
-//         <input
-//           type="text"
-//           id="new-todo-input"
-//           className="input input__lg"
-//           name="text"
-//           autoComplete="off"
-//           value={inputValue}
-//           onChange={handleInputChange}
-//         />
-//         <button type="submit" className="btn btn__primary btn__lg">
-//           Add
-//         </button>
-
-//       </form>
-//       {todos.length > 0 ? (
-//         <ul>
-//           {todos.map((todo, index) => (
-//             <li key={index}>{todo}</li>
-//           ))}
-//         </ul>
-//       ) : (
-//         <p>No tasks, add a task</p>
-//       )}
-//     </div>
-//   );
-// }

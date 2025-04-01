@@ -10,7 +10,7 @@ function App() {
 
     <main className="main-content">
       <Routes>
-        <Route path="/todo" element={<ToDoComponent />} />
+        <Route path="/" element={<ToDoComponent />} />
       </Routes>
     </main>
   );
