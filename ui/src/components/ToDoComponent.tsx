@@ -12,9 +12,11 @@ function ToDoComponent() {
   const [editingIndex, setEditingIndex] = useState(null);
   const [editingTask, setEditingTask] = useState("");
 
+  const apiUrl = "http://localhost:3004";
+
   useEffect(() => {
     axios
-      .get("http://localhost:3004/tasks")
+      .get(`${apiUrl}/tasks`)
       .then((response) => {
         setTasks(response.data);
       })
@@ -40,11 +42,11 @@ function ToDoComponent() {
       return;
     }
     axios
-      .post("http://localhost:3004/add", { text: newTask }) 
+      .post(`${apiUrl}/add`, { text: newTask }) 
       .then(() => {
 
         axios
-          .get("http://localhost:3004/tasks")
+          .get(`${apiUrl}/tasks`)
           .then((response) => {
             setTasks(response.data);
             setNewTask("");
@@ -58,7 +60,7 @@ function ToDoComponent() {
     const taskId = tasks[index]._id;
   
     axios
-      .delete(`http://localhost:3004/delete/${taskId}`)
+      .delete(`${apiUrl}/delete/${taskId}`)
       .then(() => {
 
         // Remove the task from the frontend
@@ -102,15 +104,10 @@ function ToDoComponent() {
     setEditingTask(event.target.value);
   }
 
-  function saveEdit(index: number) {
-    // if (index === null || tasks[index] === undefined) {
-    //   console.error("Invalid index for saveEdit:", index);
-    //   return;
-    // }
-  
+  function saveEdit(index: number) {  
     const taskId = tasks[index]._id;
     const updatedText = editingTask;
-
+    
     if (updatedText.trim() === "") {
       alert("Task cannot be empty");
       return;
@@ -118,7 +115,7 @@ function ToDoComponent() {
     updatedText.trim() === tasks[index].text ? alert("Task is the same") 
     :  
     axios
-      .patch(`http://localhost:3004/edit/${taskId}`, { text: updatedText })
+      .patch(`${apiUrl}/edit/${taskId}`, { text: updatedText })
       .then(() => {
         const updatedTasks = [...tasks];
         updatedTasks[index].text = updatedText;
