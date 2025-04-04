@@ -2,9 +2,8 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const TodoModel = require("./models/Todo");
-const RegisterModel = require("./models/Register");
-const LoginModel = require("./models/Login");
 const todoRoutes = require("./routes/todoRoutes");
+const userRoutes = require("./routes/userRoutes");
 
 mongoose.connect("mongodb://localhost:27017/todo", {
   useNewUrlParser: true,
@@ -14,12 +13,15 @@ mongoose.connect("mongodb://localhost:27017/todo", {
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use("/api", todoRoutes);
 
+app.use("/", userRoutes);
+app.use("/", todoRoutes);
 
 app.listen(3004, () => {
-  console.log("server is running");
+  console.log("server is running on port 3004");
 });
+
+
 
 //Region Login---------------------------------
 // app.post("/login", async (req, res) => {

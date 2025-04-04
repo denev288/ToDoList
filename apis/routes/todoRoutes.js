@@ -9,10 +9,10 @@ const {
 
 const router = express.Router();
 
-router.get("/tasks", getAllTasks);
-router.post("/tasks", addTask);
-router.delete("/tasks/:id", deleteTask);
-router.patch("/tasks/:id/completed", updateTaskCompletion);
-router.patch("/tasks/:id", editTask);
+router.post("/add", addTask); // Add a new task
+router.get("/tasks", getAllTasks); // Fetch all tasks
+router.delete("/delete/:id", deleteTask); // Delete a task
+router.patch("/update/:id", updateTaskCompletion); // Update task completion
+router.patch("/edit/:id", editTask); // Edit task text
 
 module.exports = router;

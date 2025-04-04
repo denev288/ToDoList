@@ -1,6 +1,7 @@
 import axios from "axios";
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuthContext } from "../hooks/useAuthContext";
 
 function LogInComponent() {
   const [errorMessage, setErrorMessage] = useState("");
@@ -10,25 +11,29 @@ function LogInComponent() {
 
   const apiUrl = "http://localhost:3004";
 
+  const { dispatch } = useAuthContext();
+
   function handleSubmit(e) {
     e.preventDefault();
     axios
       .post(`${apiUrl}/login`, { email, password })
       .then((result) => {
-        if (result.data === "Success") {
-          navigate("/todo");
+        if (result) {
+          localStorage.setItem("user", JSON.stringify(result.data));
+
+          //update auth context
+          dispatch({ type: "LOGIN", payload: result.data });
+          // navigate("/todo");
         }
       })
 
       .catch((error) => {
-        // Handle errors
         if (error.response) {
-          // Backend returned an error response
           setErrorMessage(error.response.data.message);
         } else {
-          // Other errors (e.g., network issues)
           setErrorMessage("An error occurred. Please try again.");
-        }});
+        }
+      });
   }
 
   return (
@@ -71,8 +76,9 @@ function LogInComponent() {
         </form>
         <p>Already have an account?</p>
         <Link
-          to={"/register"}
-          className="btn btn-default border w-100 bg-light rounder-0">
+          to={"/"}
+          className="btn btn-default border w-100 bg-light rounder-0"
+        >
           Sign Up
         </Link>
       </div>
@@ -81,4 +87,3 @@ function LogInComponent() {
 }
 
 export default LogInComponent;
-

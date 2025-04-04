@@ -2,6 +2,7 @@ import "../css/SignUpComponentSryle.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import axios from "axios";
 import { useState } from "react";
+import { useAuthContext } from "../hooks/useAuthContext";
 import { Link, useNavigate } from "react-router-dom";
 
 function SignUpComponent() {
@@ -9,16 +10,31 @@ function SignUpComponent() {
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
   const navigate = useNavigate();
+  const [errorMessage, setErrorMessage] = useState("");
+  const { dispatch } = useAuthContext();
 
   const apiUrl = "http://localhost:3004";
 
-  function handleSubmit (e) {
+  function handleSubmit(e) {
     e.preventDefault();
-    axios.post(`${apiUrl}/register`, {name, email, password})
-    .then (result => {
-      navigate("/login");
-    })
-    .catch(err => console.error("Error registering user:", err));
+    axios
+      .post(`${apiUrl}/register`, { name, email, password })
+      .then((result) => {
+        if (result) {
+          localStorage.setItem("user", JSON.stringify(result.data));
+
+          //update auth context
+          dispatch({ type: "LOGIN", payload: result.data });
+          navigate("/login");
+        }
+      })
+      .catch((error) => {
+        if (error.response) {
+          setErrorMessage(error.response.data.message);
+        } else {
+          setErrorMessage("An error occurred. Please try again.");
+        }
+      });
   }
 
   return (
@@ -35,7 +51,7 @@ function SignUpComponent() {
               placeholder="Enter Name"
               autoComplete="off"
               name="name"
-              value={name}              
+              value={name}
               className="form-control rounded-0"
               onChange={(e) => setName(e.target.value)}
             />
@@ -47,7 +63,7 @@ function SignUpComponent() {
               placeholder="Enter Email"
               autoComplete="off"
               name="email"
-              value={email}              
+              value={email}
               className="form-control rounded-0"
               onChange={(e) => setEmail(e.target.value)}
             />
@@ -65,6 +81,7 @@ function SignUpComponent() {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
+            {errorMessage && <p style={{ color: "red" }}>{errorMessage}</p>}
             <button type="submit" className="btn btn-success w-100 rounded-0">
               Register
             </button>

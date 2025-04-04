@@ -21,6 +21,7 @@ function ToDoComponent() {
         setTasks(response.data);
       })
       .catch((err) => console.error("Error fetching tasks on load:", err));
+
   }, []);
 
   function handleInputChange(event) {
@@ -44,7 +45,6 @@ function ToDoComponent() {
     axios
       .post(`${apiUrl}/add`, { text: newTask }) 
       .then(() => {
-
         axios
           .get(`${apiUrl}/tasks`)
           .then((response) => {

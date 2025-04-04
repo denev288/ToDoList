@@ -15,8 +15,8 @@ const getAllTasks = async (req, res) => {
 const addTask = async (req, res) => {
   const { text } = req.body;
   try {
-    const newTask = await TodoModel.create({ text });
-    res.json(newTask);
+    const newTask = await TodoModel.create({ text, completed: false });
+    res.status(201).json(newTask);
   } catch (err) {
     console.error("Error adding task:", err);
     res.status(500).json({ error: "Failed to add task" });
