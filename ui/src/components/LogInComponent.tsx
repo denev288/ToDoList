@@ -23,7 +23,7 @@ function LogInComponent() {
 
           //update auth context
           dispatch({ type: "LOGIN", payload: result.data });
-          // navigate("/todo");
+          navigate("/todo");
         }
       })
 

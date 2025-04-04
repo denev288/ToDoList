@@ -14,6 +14,9 @@ const getAllTasks = async (req, res) => {
 // Controller to add a new task
 const addTask = async (req, res) => {
   const { text } = req.body;
+  if (!text) {
+    return res.status(400).json({ error: "Task text is required" });
+  }
   try {
     const newTask = await TodoModel.create({ text, completed: false });
     res.status(201).json(newTask);

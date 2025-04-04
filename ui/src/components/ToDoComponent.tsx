@@ -4,6 +4,7 @@ import axios from "axios";
 import { SetStateAction, useEffect, useState } from "react";
 import { FaRegTrashAlt } from "react-icons/fa";
 import { CiEdit } from "react-icons/ci";
+import { useAuthContext } from "../hooks/useAuthContext";
 
 function ToDoComponent() {
   const [tasks, setTasks] = useState([]);
@@ -11,24 +12,37 @@ function ToDoComponent() {
   const [isEditing, setEditing] = useState(false);
   const [editingIndex, setEditingIndex] = useState(null);
   const [editingTask, setEditingTask] = useState("");
+  const { user } = useAuthContext();
 
   const apiUrl = "http://localhost:3004";
 
-  useEffect(() => {
+  function fetchTasks() {
     axios
-      .get(`${apiUrl}/tasks`)
+      .get(`${apiUrl}/tasks`, {
+        headers: { Authorization: `Bearer ${user.token}` },
+      })
       .then((response) => {
         setTasks(response.data);
       })
       .catch((err) => console.error("Error fetching tasks on load:", err));
+  }
 
-  }, []);
+  useEffect(() => {
+    if (user) {
+      fetchTasks();
+    }
+  }, [user]);
 
   function handleInputChange(event) {
     setNewTask(event.target.value);
   }
 
   function handleAdd(e) {
+    if (!user) {
+      alert("Please log in");
+      return;
+    }
+
     e.preventDefault();
     if (newTask.trim() === "") {
       alert("Task cannot be empty");
@@ -43,10 +57,16 @@ function ToDoComponent() {
       return;
     }
     axios
-      .post(`${apiUrl}/add`, { text: newTask }) 
+      .post(
+        `${apiUrl}/add`,
+        { text: newTask },
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      )
       .then(() => {
         axios
-          .get(`${apiUrl}/tasks`)
+          .get(`${apiUrl}/tasks`, {
+            headers: { Authorization: `Bearer ${user.token}` },
+          })
           .then((response) => {
             setTasks(response.data);
             setNewTask("");
@@ -58,18 +78,21 @@ function ToDoComponent() {
 
   function deleteTask(index: number) {
     const taskId = tasks[index]._id;
-  
+    if (!user) {
+      alert("Please log in");
+      return;
+    }
     axios
-      .delete(`${apiUrl}/delete/${taskId}`)
+      .delete(`${apiUrl}/delete/${taskId}`, {
+        headers: { Authorization: `Bearer ${user.token}` }
+      })
       .then(() => {
-
         // Remove the task from the frontend
         const updatedTasks = tasks.filter((_, i) => i !== index);
         setTasks(updatedTasks);
       })
       .catch((err) => console.error("Error deleting task:", err));
   }
-  
 
   function moveTaskUp(index) {
     if (index > 0) {
@@ -104,27 +127,27 @@ function ToDoComponent() {
     setEditingTask(event.target.value);
   }
 
-  function saveEdit(index: number) {  
+  function saveEdit(index: number) {
     const taskId = tasks[index]._id;
     const updatedText = editingTask;
-    
+
     if (updatedText.trim() === "") {
       alert("Task cannot be empty");
       return;
     }
-    updatedText.trim() === tasks[index].text ? alert("Task is the same") 
-    :  
-    axios
-      .patch(`${apiUrl}/edit/${taskId}`, { text: updatedText })
-      .then(() => {
-        const updatedTasks = [...tasks];
-        updatedTasks[index].text = updatedText;
-        setTasks(updatedTasks);
-        setEditing(false);
-        setEditingIndex(null);
-        setEditingTask("");
-      })
-      .catch((err) => console.error("Error updating task:", err));
+    updatedText.trim() === tasks[index].text
+      ? alert("Task is the same")
+      : axios
+          .patch(`${apiUrl}/edit/${taskId}`, { text: updatedText })
+          .then(() => {
+            const updatedTasks = [...tasks];
+            updatedTasks[index].text = updatedText;
+            setTasks(updatedTasks);
+            setEditing(false);
+            setEditingIndex(null);
+            setEditingTask("");
+          })
+          .catch((err) => console.error("Error updating task:", err));
   }
 
   function handleDragEvent(event: any) {
@@ -149,9 +172,10 @@ function ToDoComponent() {
     const updatedCompleted = !tasks[index].completed;
 
     axios
-      .patch(`http://localhost:3004/update/${taskId}`, { completed: updatedCompleted })
+      .patch(`http://localhost:3004/update/${taskId}`, {
+        completed: updatedCompleted,
+      })
       .then(() => {
-
         const updatedTasks = [...tasks];
         updatedTasks[index].completed = updatedCompleted;
         setTasks(updatedTasks);
@@ -164,7 +188,7 @@ function ToDoComponent() {
       <div className="to-do-list">
         <h1>To Do List</h1>
         <div>
-        <form onSubmit={handleAdd}>
+          <form onSubmit={handleAdd}>
             <input
               type="text"
               placeholder="Add a task..."
@@ -186,7 +210,10 @@ function ToDoComponent() {
                         value={editingTask}
                         onChange={handleEditChange}
                       />
-                      <button className="save-button" onClick={() => saveEdit(editingIndex)}>
+                      <button
+                        className="save-button"
+                        onClick={() => saveEdit(editingIndex)}
+                      >
                         Save
                       </button>
                       <button
@@ -219,7 +246,7 @@ function ToDoComponent() {
                         onClick={() => deleteTask(index)}
                       >
                         <FaRegTrashAlt />
-                      </button>                 
+                      </button>
                       <button
                         className="edit-button"
                         onClick={() => startEditing(index)}
