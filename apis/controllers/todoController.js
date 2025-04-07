@@ -3,7 +3,8 @@ const TodoModel = require("../models/Todo");
 // Controller to fetch all tasks
 const getAllTasks = async (req, res) => {
   try {
-    const tasks = await TodoModel.find();
+    const user_id = req.user._id;
+    const tasks = await TodoModel.find({ user_id });
     res.json(tasks);
   } catch (err) {
     console.error("Error fetching tasks:", err);
@@ -18,7 +19,8 @@ const addTask = async (req, res) => {
     return res.status(400).json({ error: "Task text is required" });
   }
   try {
-    const newTask = await TodoModel.create({ text, completed: false });
+    const user_id = req.user._id;
+    const newTask = await TodoModel.create({ text, completed: false, user_id });
     res.status(201).json(newTask);
   } catch (err) {
     console.error("Error adding task:", err);
