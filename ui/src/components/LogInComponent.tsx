@@ -23,7 +23,7 @@ function LogInComponent() {
 
           //update auth context
           dispatch({ type: "LOGIN", payload: result.data });
-          // navigate("/todo");
+          navigate("/todo");
         }
       })
 
@@ -74,9 +74,9 @@ function LogInComponent() {
             Login
           </button>
         </form>
-        <p>Already have an account?</p>
+        <p>Don't have and account?</p>
         <Link
-          to={"/"}
+          to={"/signup"}
           className="btn btn-default border w-100 bg-light rounder-0"
         >
           Sign Up
