@@ -7,26 +7,49 @@ import NavbarComponent from "./components/NavBarComponent";
 import AuthContextProvider from "./context/AuthContext";
 import { useAuthContext } from "./hooks/useAuthContext";
 
-
-
 function App() {
-
-  const { user } = useAuthContext();
-
   return (
     <AuthContextProvider>
-    <main className="main-content">
-      <NavbarComponent />
-      <Routes>
-          <Route path="/signup" element={ !user ? <SignUpComponent /> : <Navigate to="/todo"/>} />
-          <Route path="/login" element={ !user ? <LogInComponent /> : <Navigate to="/todo"/>} />
-          <Route path="/todo" element={user ? <ToDoComponent /> : <Navigate to="/login"/>} />
-
-      </Routes>
+      <main className="main-content">
+        <NavbarComponent />
+        <Routes>
+        <Route path="/" element={<Navigate to="/login" />} />
+          <Route
+            path="/signup"
+            element={
+              <ProtectedRoute redirectTo="/todo" inverse>
+                <SignUpComponent />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/login"
+            element={
+              <ProtectedRoute redirectTo="/todo" inverse>
+                <LogInComponent />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/todo"
+            element={
+              <ProtectedRoute redirectTo="/login">
+                <ToDoComponent />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
       </main>
     </AuthContextProvider>
- 
   );
+}
+
+function ProtectedRoute({ children, redirectTo, inverse = false }) {
+  const { user } = useAuthContext();
+
+  const shouldRedirect = inverse ? !!user : !user;
+
+  return shouldRedirect ? <Navigate to={redirectTo} /> : children;
 }
 
 export default App;
