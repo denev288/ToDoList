@@ -84,7 +84,7 @@ function ToDoComponent() {
     }
     axios
       .delete(`${apiUrl}/delete/${taskId}`, {
-        headers: { Authorization: `Bearer ${user.token}` }
+        headers: { Authorization: `Bearer ${user.token}` },
       })
       .then(() => {
         // Remove the task from the frontend
@@ -138,7 +138,13 @@ function ToDoComponent() {
     updatedText.trim() === tasks[index].text
       ? alert("Task is the same")
       : axios
-          .patch(`${apiUrl}/edit/${taskId}`, { text: updatedText })
+          .patch(
+            `${apiUrl}/edit/${taskId}`,
+            { text: updatedText },
+            {
+              headers: { Authorization: `Bearer ${user.token}` },
+            }
+          )
           .then(() => {
             const updatedTasks = [...tasks];
             updatedTasks[index].text = updatedText;
@@ -167,98 +173,134 @@ function ToDoComponent() {
     setTasks(updatedTasks);
   }
 
-  function taskCompleted(index) {
-    const taskId = tasks[index]._id;
-    const updatedCompleted = !tasks[index].completed;
+  function taskCompleted(taskId) {
+    const taskIndex = tasks.findIndex((task) => task._id === taskId);
+    const updatedCompleted = !tasks[taskIndex].completed;
 
     axios
-      .patch(`http://localhost:3004/update/${taskId}`, {
-        completed: updatedCompleted,
-      })
+      .patch(
+        `${apiUrl}/update/${taskId}`,
+        { completed: updatedCompleted },
+        {
+          headers: { Authorization: `Bearer ${user.token}` },
+        }
+      )
       .then(() => {
         const updatedTasks = [...tasks];
-        updatedTasks[index].completed = updatedCompleted;
+        updatedTasks[taskIndex].completed = updatedCompleted;
         setTasks(updatedTasks);
       })
       .catch((err) => console.error("Error updating task completion:", err));
   }
-
   return (
     <>
-      <div className="to-do-list">
-        <h1>To Do List</h1>
-        <div>
-          <form onSubmit={handleAdd}>
-            <input
-              type="text"
-              placeholder="Add a task..."
-              value={newTask}
-              onChange={handleInputChange}
-            />
-            <button className="add-button" type="submit">
-              Add
-            </button>
-          </form>
+      <div className="add-task">
+        <form onSubmit={handleAdd}>
+          <input
+            type="text"
+            placeholder="Add a task..."
+            value={newTask}
+            onChange={handleInputChange}
+          />
+          <button className="add-button" type="submit">
+            Add
+          </button>
+        </form>
+      </div>
+      <div className="parent">
+        <div className="to-do-list">
+          <h1>To Do List</h1>
           <ol>
-            {tasks.length > 0 ? (
-              tasks.map((task, index) => (
-                <li key={index}>
-                  {isEditing && editingIndex === index ? (
-                    <>
-                      <input
-                        type="text"
-                        value={editingTask}
-                        onChange={handleEditChange}
-                      />
-                      <button
-                        className="save-button"
-                        onClick={() => saveEdit(editingIndex)}
-                      >
-                        Save
-                      </button>
-                      <button
-                        className="cancel-button"
-                        onClick={() => {
-                          setEditing(false);
-                          setEditingIndex(null);
-                          setEditingTask("");
-                        }}
-                      >
-                        Cancel
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <input
-                        type="checkbox"
-                        checked={task.completed}
-                        onChange={() => taskCompleted(index)}
-                      />
-                      <span
-                        className={`text ${
-                          task.completed ? "completed-task" : ""
-                        }`}
-                      >
-                        {task.text}
-                      </span>
-                      <button
-                        className="delete-button"
-                        onClick={() => deleteTask(index)}
-                      >
-                        <FaRegTrashAlt />
-                      </button>
-                      <button
-                        className="edit-button"
-                        onClick={() => startEditing(index)}
-                      >
-                        <CiEdit />
-                      </button>
-                    </>
-                  )}
-                </li>
-              ))
+            {tasks.filter((task) => !task.completed).length > 0 ? (
+              tasks
+                .filter((task) => !task.completed)
+                .map((task, index) => (
+                  <li key={task._id}>
+                    {isEditing && editingIndex === index ? (
+                      <>
+                        <input
+                          type="text"
+                          value={editingTask}
+                          onChange={handleEditChange}
+                        />
+                        <div className="button-container">
+                          <button
+                            className="save-button"
+                            onClick={() => saveEdit(editingIndex)}
+                          >
+                            Save
+                          </button>
+                          <button
+                            className="cancel-button"
+                            onClick={() => {
+                              setEditing(false);
+                              setEditingIndex(null);
+                              setEditingTask("");
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <input
+                          type="checkbox"
+                          checked={task.completed}
+                          onChange={() => taskCompleted(task._id)}
+                        />
+                        <span
+                          className={`text ${
+                            task.completed ? "completed-task" : ""
+                          }`}
+                        >
+                          {task.text}
+                        </span>
+                        <button
+                          className="delete-button"
+                          onClick={() => deleteTask(index)}
+                        >
+                          <FaRegTrashAlt />
+                        </button>
+                        <button
+                          className="edit-button"
+                          onClick={() => startEditing(index)}
+                        >
+                          <CiEdit />
+                        </button>
+                      </>
+                    )}
+                  </li>
+                ))
             ) : (
               <p>No current tasks</p>
+            )}
+          </ol>
+        </div>
+        <div className="completed-list">
+          <h1>Completed</h1>
+          <ol>
+            {tasks.filter((task) => task.completed).length > 0 ? (
+              tasks
+                .filter((task) => task.completed)
+                .map((task, index) => (
+                  <li key={task._id}>
+                    <input
+                      type="checkbox"
+                      checked={task.completed}
+                      onChange={() => taskCompleted(task._id)}
+                    />
+                    <span className="completed-task">{task.text}</span>
+                    <button
+                      className="completed-delete-button"
+                      onClick={() => deleteTask(index)}
+                    >
+                      <FaRegTrashAlt />
+                    </button>
+                  </li>
+                ))
+            ) : (
+              <p>No completed tasks</p>
             )}
           </ol>
         </div>
