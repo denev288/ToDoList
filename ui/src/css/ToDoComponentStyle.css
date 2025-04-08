@@ -1,8 +1,36 @@
 
+.parent {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  width: 1100px;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+  box-sizing: border-box;
+}
 
-.to-do-list{
-  text-align: center;
-  margin-top: 100px;
+.to-do-list,
+.completed-list {
+  flex: 1;
+  height: 500px; /* Fixed height for the containers */
+  width: 48%; /* Fixed width for the containers */
+  border: 3px solid rgb(247, 247, 247);
+  border-radius: 5px;
+  background-color: rgb(255, 255, 255);
+  display: flex;
+  flex-direction: column; /* Stack header and content vertically */
+  padding: 20px;
+  box-sizing: border-box;
+  overflow: hidden; /* Prevent content from overflowing */
+}
+
+
+
+.add-task{
+  right: 310px;
+  position: relative;
 }
 
 h1 {
@@ -26,12 +54,12 @@ button {
 .add-button:hover{
   background-color: rgb(82, 80, 80);
 }
-.delete-button{
+.delete-button, .completed-delete-button{
   background-color: white;
   color: red;
 }
 
-.delete-button:hover{
+.delete-button:hover, .completed-delete-button:hover{
   color: rgb(146, 1, 1);
 }
 .move-button{
@@ -42,12 +70,12 @@ button {
   background-color: rgb(2, 71, 2);
 }
 .edit-button, .save-button{
-  background-color: white;
+  background-color: transparent;
   color: blue;
 }
 
 .edit-button:hover, .save-button:hover{
-  background-color: white;
+  background-color: transparent;
   color: rgb(1, 1, 145);
 }
 
@@ -64,7 +92,7 @@ ol{
 }
 
 li{
-  font-size: 2rem;
+  font-size: 1rem;
   font-weight: bold;
   padding: 15px;
   background-color: white;
@@ -73,32 +101,49 @@ li{
   border-radius: 5px;
   display: flex;
   align-items: center;
+  justify-content: space-between; /* Space between text and buttons */
   color: black;
+}
+
+.button-container {
+  display: flex;
+  flex-direction: column; /* Stack buttons vertically */
+  gap: 5px; /* Add spacing between buttons */
 }
 
 .text{
   flex: 1;
+  margin-right: 10px;
 }
 
 .delete-button, .move-button, .edit-button, .save-button{
   padding: 8px 12px;
   font-size: 1.4rem;
   margin-left: 5px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
 }
 .cancel-button {
   margin-left: 5px;
-  background-color: #f44336;
-  color: white;
+  background-color: transparent;
+  color: #f44336;
   border: none;
   padding: 5px 10px;
   cursor: pointer;
 }
 
 .cancel-button:hover {
-  background-color: #d32f2f;
+  background-color: transparent;
+  color: #a7150b;
 }
 
 .completed-task {
   text-decoration: line-through;
   color: gray;
+}
+.completed-delete-button{
+  padding: 8px 12px;
+  font-size: 1.4rem;
+  margin-left: 85px;
 }

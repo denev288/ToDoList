@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import {useLogOut} from "../hooks/useLogOut";
 import {useAuthContext} from "../hooks/useAuthContext";
+import "../css/NavBarStyle.css";
 
 function NavBarComponent() {
   const { logOut } = useLogOut();
@@ -14,13 +15,13 @@ function NavBarComponent() {
     <header>
       <nav>
         { user && (
-        <div className="navbar d-flex justify-content-end gap-3">
-          <span >{user.email}</span>
+        <div className="navbar1">
+          <span className="welcome">Welcome: {user.email}</span>
           <button onClick={handleClick} className="btn btn-outline-success me-2" type="button">Log Out</button>
         </div>
         )}
         {!user && (
-        <div className="navbar d-flex justify-content-end gap-3">
+        <div className="navbar2">
           <Link to="/signup" className="navbar-brand">
             Sign Up
           </Link>
