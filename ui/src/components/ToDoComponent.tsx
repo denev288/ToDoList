@@ -123,10 +123,12 @@ function ToDoComponent() {
     }
   }
 
-  function startEditing(index: number) {
+  function startEditing(taskId: string) {
+    const task = tasks.find((task) => task._id === taskId);
+  
     setEditing(true);
-    setEditingIndex(index);
-    setEditingTask(tasks[index].text);
+    setEditingIndex(taskId); 
+    setEditingTask(task.text);
   }
 
   function handleEditChange(event: {
@@ -135,33 +137,43 @@ function ToDoComponent() {
     setEditingTask(event.target.value);
   }
 
-  function saveEdit(index: number) {
-    const taskId = tasks[index]._id;
+  function saveEdit() {
+    const taskId = editingIndex; // Use the stored task ID
+    const taskIndex = tasks.findIndex((task) => task._id === taskId);
+    if (taskIndex === -1) {
+      console.error("Task not found");
+      return;
+    }
+  
     const updatedText = editingTask;
-
+  
     if (updatedText.trim() === "") {
       alert("Task cannot be empty");
       return;
     }
-    updatedText.trim() === tasks[index].text
-      ? alert("Task is the same")
-      : axios
-          .patch(
-            `${apiUrl}/edit/${taskId}`,
-            { text: updatedText },
-            {
-              headers: { Authorization: `Bearer ${user.token}` },
-            }
-          )
-          .then(() => {
-            const updatedTasks = [...tasks];
-            updatedTasks[index].text = updatedText;
-            setTasks(updatedTasks);
-            setEditing(false);
-            setEditingIndex(null);
-            setEditingTask("");
-          })
-          .catch((err) => console.error("Error updating task:", err));
+  
+    if (updatedText.trim() === tasks[taskIndex].text) {
+      alert("Task is the same");
+      return;
+    }
+  
+    axios
+      .patch(
+        `${apiUrl}/edit/${taskId}`,
+        { text: updatedText },
+        {
+          headers: { Authorization: `Bearer ${user.token}` },
+        }
+      )
+      .then(() => {
+        const updatedTasks = [...tasks];
+        updatedTasks[taskIndex].text = updatedText;
+        setTasks(updatedTasks);
+        setEditing(false);
+        setEditingIndex(null);
+        setEditingTask("");
+      })
+      .catch((err) => console.error("Error updating task:", err));
   }
 
   function handleDragEvent(event: any) {
@@ -224,7 +236,7 @@ function ToDoComponent() {
                 .filter((task) => !task.completed)
                 .map((task, index) => (
                   <li key={task._id}>
-                    {isEditing && editingIndex === index ? (
+                    {isEditing && editingIndex === task._id ? (
                       <>
                         <input
                           type="text"
@@ -272,7 +284,7 @@ function ToDoComponent() {
                         </button>
                         <button
                           className="edit-button"
-                          onClick={() => startEditing(index)}
+                          onClick={() => startEditing(task._id)}
                         >
                           <CiEdit />
                         </button>
