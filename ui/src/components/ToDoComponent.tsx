@@ -21,7 +21,7 @@ function ToDoComponent() {
       .get(`${apiUrl}/tasks`, {
         headers: { Authorization: `Bearer ${user.token}` },
       })
-      .then((response) => {
+      .then((response) => {        
         setTasks(response.data);
       })
       .catch((err) => console.error("Error fetching tasks on load:", err));
@@ -32,6 +32,14 @@ function ToDoComponent() {
       fetchTasks();
     }
   }, [user]);
+
+  useEffect(() => {
+    console.log("Component rendered");
+
+    return() => {
+      console.log("Component destroyed");
+    }
+  }, []);
 
   function handleInputChange(event) {
     setNewTask(event.target.value);
@@ -76,8 +84,8 @@ function ToDoComponent() {
       .catch((err) => console.error("Error adding task:", err));
   }
 
-  function deleteTask(index: number) {
-    const taskId = tasks[index]._id;
+  function deleteTask(taskId: string) {
+
     if (!user) {
       alert("Please log in");
       return;
@@ -88,7 +96,7 @@ function ToDoComponent() {
       })
       .then(() => {
         // Remove the task from the frontend
-        const updatedTasks = tasks.filter((_, i) => i !== index);
+        const updatedTasks = tasks.filter((task) => task._id !== taskId);
         setTasks(updatedTasks);
       })
       .catch((err) => console.error("Error deleting task:", err));
@@ -258,7 +266,7 @@ function ToDoComponent() {
                         </span>
                         <button
                           className="delete-button"
-                          onClick={() => deleteTask(index)}
+                          onClick={() => deleteTask(task._id)}
                         >
                           <FaRegTrashAlt />
                         </button>

@@ -8,7 +8,7 @@ function LogInComponent() {
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
   const navigate = useNavigate();
-
+ 
   const apiUrl = "http://localhost:3004";
 
   const { dispatch } = useAuthContext();
