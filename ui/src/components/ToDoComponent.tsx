@@ -14,7 +14,8 @@ function ToDoComponent() {
   const [editingTask, setEditingTask] = useState("");
   const { user } = useAuthContext();
 
-  const apiUrl = "http://localhost:3004";
+
+  const apiUrl = import.meta.env.VITE_APIURL;
 
   function fetchTasks() {
     axios
@@ -313,7 +314,7 @@ function ToDoComponent() {
                     <span className="completed-task">{task.text}</span>
                     <button
                       className="completed-delete-button"
-                      onClick={() => deleteTask(index)}
+                      onClick={() => deleteTask(task._id)}
                     >
                       <FaRegTrashAlt />
                     </button>
