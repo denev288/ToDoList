@@ -22,11 +22,11 @@ function NavBarComponent() {
         )}
         {!user && (
         <div className="navbar2">
+          {/* <Link to="/todo" className="navbar-brand">
+            To Do
+          </Link> */}
           <Link to="/signup" className="navbar-brand">
             Sign Up
-          </Link>
-          <Link to="/todo" className="navbar-brand">
-            To Do
           </Link>
           <Link to="/login" className="navbar-brand">
             Login

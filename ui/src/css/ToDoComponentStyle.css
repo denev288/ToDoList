@@ -14,7 +14,6 @@
 .to-do-list,
 .completed-list {
   flex: 1;
-  height: 500px; /* Fixed height for the containers */
   width: 48%; /* Fixed width for the containers */
   border: 3px solid rgb(247, 247, 247);
   border-radius: 5px;
