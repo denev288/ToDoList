@@ -14,16 +14,17 @@ function ToDoComponent() {
   const [editingTask, setEditingTask] = useState("");
   const { user } = useAuthContext();
 
-
   const apiUrl = import.meta.env.VITE_APIURL;
+  console.log("API URL:", apiUrl);
 
   function fetchTasks() {
     axios
       .get(`${apiUrl}/tasks`, {
         headers: { Authorization: `Bearer ${user.token}` },
       })
-      .then((response) => {        
-        setTasks(response.data);
+      .then((response) => {     
+        const fetchedTasks = Array.isArray(response.data) ? response.data : [];   
+        setTasks(fetchedTasks);
       })
       .catch((err) => console.error("Error fetching tasks on load:", err));
   }
@@ -232,7 +233,8 @@ function ToDoComponent() {
         <div className="to-do-list">
           <h1>To Do List</h1>
           <ol>
-            {tasks.filter((task) => !task.completed).length > 0 ? (
+            {
+            tasks.filter((task) => !task.completed).length > 0 ? (
               tasks
                 .filter((task) => !task.completed)
                 .map((task, index) => (
