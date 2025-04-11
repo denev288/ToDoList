@@ -15,7 +15,7 @@ function ToDoComponent() {
   const { user } = useAuthContext();
 
   const apiUrl = import.meta.env.VITE_APIURL;
-  console.log("API URL:", apiUrl);
+
 
   function fetchTasks() {
     axios
