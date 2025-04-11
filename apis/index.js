@@ -26,7 +26,6 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-console.log(corsOptions);
 
 app.use(express.json());
 
