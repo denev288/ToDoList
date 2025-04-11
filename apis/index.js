@@ -17,7 +17,17 @@ mongoose.connect(MONDODB_URL, {
 });
 
 const app = express();
-app.use(cors());
+
+const corsOptions = {
+  origin: ["http://localhost:5173", "http://localhost.second:5173"],
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
+console.log(corsOptions);
+
 app.use(express.json());
 
 app.use("/", userRoutes);

@@ -4,7 +4,7 @@ const jwt = require("jsonwebtoken");
 
 
 const createToken = (_id) => {
-    return jwt.sign({ _id }, process.env.SECRET, { expiresIn: "3d" });
+    return jwt.sign({ _id }, process.env.SECRET, { expiresIn: "3d" }); // refresh token
 };
 // Finds the user in the database and checks if the password is correct
 const loginUser = async (req, res) => {
