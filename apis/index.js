@@ -5,8 +5,10 @@ const TodoModel = require("./models/Todo");
 const todoRoutes = require("./routes/todoRoutes");
 const userRoutes = require("./routes/userRoutes");
 const dotenv = require("dotenv");
+const cookieParser = require('cookie-parser');
 
 dotenv.config();
+
 
 MONDODB_URL = process.env.MONDODB_URL;
 Mongo_url = "mongodb://localhost:27017/todo"
@@ -24,18 +26,13 @@ const corsOptions = {
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
 };
-
+app.use(cookieParser());
 app.use(cors(corsOptions));
 
 app.use(express.json());
 
 app.use("/", userRoutes);
 app.use("/", todoRoutes);
-
-// app.use((req, res, next) => {
-//   console.log(`${req.method} ${req.path}`);
-//   next();
-// });
 
 app.listen(3004, () => {
   console.log("server is running on port 3004");

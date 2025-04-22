@@ -4,8 +4,40 @@ const jwt = require("jsonwebtoken");
 
 
 const createToken = (_id) => {
-    return jwt.sign({ _id }, process.env.SECRET, { expiresIn: "3d" }); // refresh token
+    return jwt.sign({ _id }, process.env.SECRET, { expiresIn: "10s" }); // access token
 };
+const createRefreshToken = (_id) => {
+    return jwt.sign({ _id }, process.env.RREFRESH_TOKEN_SECRET, { expiresIn: "3d" }); // refresh token
+};
+
+const refreshToken = async (req, res) => {
+    
+    try {
+        const refreshToken = req.body.refreshToken;
+
+        if (!refreshToken) {
+            return res.status(401).json({ message: 'Refresh token not found' });
+        }
+
+        await jwt.verify(refreshToken, process.env.RREFRESH_TOKEN_SECRET, async (err, decoded) => {
+            if (err) {
+                return res.status(403).json({ message: 'Invalid or expired refresh token' });
+            }
+
+            const user = await UserModel.findById(decoded._id);
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+            const newAccessToken = createToken(user._id);
+
+            res.status(200).json({ token: newAccessToken });
+        });
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({  message: "refreshToken Method" });
+    }
+};
+
 // Finds the user in the database and checks if the password is correct
 const loginUser = async (req, res) => {
     const { email, password } = req.body;
@@ -15,8 +47,17 @@ const loginUser = async (req, res) => {
         const user = await UserModel.login(email, password);
         //create token
         const token = createToken(user._id);
+        const refreshToken = createRefreshToken(user._id)
         
-        res.status(200).json({email, token});
+        
+        // res.cookie('refreshToken', refreshToken, {
+        //     httpOnly: true,   
+        //     secure: process.env.RREFRESH_TOKEN_SECRET === 'production', 
+        //     sameSite: 'Strict', 
+        //     maxAge: 3 * 24 * 60 * 60 * 1000 
+        // });
+
+        res.status(200).json({email, token, refreshToken});
     } catch(error){
         res.status(400).json({message: error.message});
     }
@@ -35,7 +76,10 @@ const createRegistration = async (req, res) => {
     }
   };
 
+  
+
 module.exports = {
     loginUser,
-    createRegistration
+    createRegistration, 
+    refreshToken
 };

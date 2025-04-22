@@ -20,6 +20,8 @@ function LogInComponent() {
       .then((result) => {
         if (result) {
           localStorage.setItem("user", JSON.stringify(result.data));
+          // localStorage.setItem('accessToken', result.data.token);
+          localStorage.setItem('refreshToken', result.data.refreshToken);
 
           //update auth context
           dispatch({ type: "LOGIN", payload: result.data });
