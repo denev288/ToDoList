@@ -1,21 +1,26 @@
 import "../css/ToDoComponentStyle.css";
-import { DndContext, useDraggable, useDroppable } from "@dnd-kit/core";
 import axios from "axios";
-import { SetStateAction, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { FaRegTrashAlt } from "react-icons/fa";
 import { CiEdit } from "react-icons/ci";
-import { useAuthContext } from "../hooks/useAuthContext";
+import useAuthContext from "../hooks/useAuthContext";
+
+// Define a proper Task interface
+interface Task {
+  _id: string;
+  text: string;
+  completed: boolean;
+}
 
 function ToDoComponent() {
-  const [tasks, setTasks] = useState([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [newTask, setNewTask] = useState("");
   const [isEditing, setEditing] = useState(false);
-  const [editingIndex, setEditingIndex] = useState(null);
+  const [editingIndex, setEditingIndex] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState("");
   const { user } = useAuthContext();
 
   const apiUrl = import.meta.env.VITE_APIURL;
-
 
   function fetchTasks() {
     axios
@@ -23,7 +28,7 @@ function ToDoComponent() {
         headers: { Authorization: `Bearer ${user.token}` },
       })
       .then((response) => {     
-        const fetchedTasks = Array.isArray(response.data) ? response.data : [];   
+        const fetchedTasks: Task[] = Array.isArray(response.data) ? response.data : [];   
         setTasks(fetchedTasks);
       })
       .catch((err) => console.error("Error fetching tasks on load:", err));
@@ -43,11 +48,11 @@ function ToDoComponent() {
     }
   }, []);
 
-  function handleInputChange(event) {
+  function handleInputChange(event: React.ChangeEvent<HTMLInputElement>) {
     setNewTask(event.target.value);
   }
 
-  function handleAdd(e) {
+  function handleAdd(e: React.FormEvent) {
     if (!user) {
       alert("Please log in");
       return;
@@ -87,7 +92,6 @@ function ToDoComponent() {
   }
 
   function deleteTask(taskId: string) {
-
     if (!user) {
       alert("Please log in");
       return;
@@ -104,43 +108,24 @@ function ToDoComponent() {
       .catch((err) => console.error("Error deleting task:", err));
   }
 
-  function moveTaskUp(index) {
-    if (index > 0) {
-      const updatedTasks = [...tasks];
-      [updatedTasks[index], updatedTasks[index - 1]] = [
-        updatedTasks[index - 1],
-        updatedTasks[index],
-      ];
-      setTasks(updatedTasks);
-    }
-  }
-  function moveTaskDown(index: number) {
-    if (index < tasks.length - 1) {
-      const updatedTasks = [...tasks];
-      [updatedTasks[index], updatedTasks[index + 1]] = [
-        updatedTasks[index + 1],
-        updatedTasks[index],
-      ];
-      setTasks(updatedTasks);
-    }
-  }
-
   function startEditing(taskId: string) {
     const task = tasks.find((task) => task._id === taskId);
-  
-    setEditing(true);
-    setEditingIndex(taskId); 
-    setEditingTask(task.text);
+    
+    if (task) {
+      setEditing(true);
+      setEditingIndex(taskId); 
+      setEditingTask(task.text);
+    }
   }
 
-  function handleEditChange(event: {
-    target: { value: SetStateAction<string> };
-  }) {
+  function handleEditChange(event: React.ChangeEvent<HTMLInputElement>) {
     setEditingTask(event.target.value);
   }
 
   function saveEdit() {
-    const taskId = editingIndex; // Use the stored task ID
+    const taskId = editingIndex;
+    if (!taskId) return;
+    
     const taskIndex = tasks.findIndex((task) => task._id === taskId);
     if (taskIndex === -1) {
       console.error("Task not found");
@@ -178,25 +163,10 @@ function ToDoComponent() {
       .catch((err) => console.error("Error updating task:", err));
   }
 
-  function handleDragEvent(event: any) {
-    const { active, over } = event;
-
-    if (!over) return;
-
-    const oldIndex = active.id;
-    const newIndex = over.id;
-
-    if (oldIndex === newIndex) return;
-
-    const updatedTasks = [...tasks];
-    const [movedTask] = updatedTasks.splice(oldIndex, 1);
-    updatedTasks.splice(newIndex, 0, movedTask);
-
-    setTasks(updatedTasks);
-  }
-
-  function taskCompleted(taskId) {
+  function taskCompleted(taskId: string) {
     const taskIndex = tasks.findIndex((task) => task._id === taskId);
+    if (taskIndex === -1) return;
+    
     const updatedCompleted = !tasks[taskIndex].completed;
 
     axios
@@ -214,6 +184,7 @@ function ToDoComponent() {
       })
       .catch((err) => console.error("Error updating task completion:", err));
   }
+  
   return (
     <>
       <div className="add-task">
@@ -237,7 +208,7 @@ function ToDoComponent() {
             tasks.filter((task) => !task.completed).length > 0 ? (
               tasks
                 .filter((task) => !task.completed)
-                .map((task, index) => (
+                .map((task) => (
                   <li key={task._id}>
                     {isEditing && editingIndex === task._id ? (
                       <>
@@ -249,7 +220,7 @@ function ToDoComponent() {
                         <div className="button-container">
                           <button
                             className="save-button"
-                            onClick={() => saveEdit(editingIndex)}
+                            onClick={() => saveEdit()}
                           >
                             Save
                           </button>
@@ -306,7 +277,7 @@ function ToDoComponent() {
             {tasks.filter((task) => task.completed).length > 0 ? (
               tasks
                 .filter((task) => task.completed)
-                .map((task, index) => (
+                .map((task) => (
                   <li key={task._id}>
                     <input
                       type="checkbox"

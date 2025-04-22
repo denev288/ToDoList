@@ -1,7 +1,8 @@
-import  {AuthContext}  from "../context/AuthContext";
 import { useContext } from "react";
+import { AuthContext } from "../context/AuthContext";
 
-export const useAuthContext = () => {
+// Custom hook to use the auth context
+const useAuthContext = () => {
     const context = useContext(AuthContext);
 
     if (!context) {
@@ -10,3 +11,5 @@ export const useAuthContext = () => {
 
     return context;
 }
+
+export default useAuthContext;

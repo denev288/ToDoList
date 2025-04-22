@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuthContext } from "../hooks/useAuthContext";
+import  useAuthContext  from "../hooks/useAuthContext";
 
 function LogInComponent() {
   const [errorMessage, setErrorMessage] = useState("");
@@ -13,7 +13,7 @@ function LogInComponent() {
 
   const { dispatch } = useAuthContext();
 
-  function handleSubmit(e) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     axios
       .post(`${apiUrl}/login`, { email, password })
