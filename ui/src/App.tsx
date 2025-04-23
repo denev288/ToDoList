@@ -4,8 +4,9 @@ import SignUpComponent from "./components/SignUpComponent";
 import ToDoComponent from "./components/ToDoComponent";
 import { Routes, Route, Navigate } from "react-router-dom";
 import NavbarComponent from "./components/NavBarComponent";
-import AuthContextProvider from "./context/AuthContext";
-import { useAuthContext } from "./hooks/useAuthContext";
+import { AuthContextProvider } from "./context/AuthContext";
+import useAuthContext from "./hooks/useAuthContext";
+import React from "react"
 
 function App() {
   return (
@@ -13,7 +14,7 @@ function App() {
       <main className="main-content">
         <NavbarComponent />
         <Routes>
-        <Route path="/" element={<Navigate to="/login" />} />
+          <Route path="/" element={<Navigate to="/login" />} />
           <Route
             path="/signup"
             element={
@@ -44,7 +45,15 @@ function App() {
   );
 }
 
-function ProtectedRoute({ children, redirectTo, inverse = false }) {
+function ProtectedRoute({ 
+  children, 
+  redirectTo = "", 
+  inverse = false 
+}: {
+  children: React.ReactNode;
+  redirectTo: string;
+  inverse?: boolean;
+}) {
   const { user } = useAuthContext();
 
   const shouldRedirect = inverse ? !!user : !user;

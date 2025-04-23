@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuthContext } from "../hooks/useAuthContext";
+import  useAuthContext  from "../hooks/useAuthContext";
 
 function LogInComponent() {
   const [errorMessage, setErrorMessage] = useState("");
@@ -9,17 +9,19 @@ function LogInComponent() {
   const [email, setEmail] = useState("");
   const navigate = useNavigate();
  
-  const apiUrl = "http://localhost:3004";
+  const apiUrl = import.meta.env.VITE_APIURL;
 
   const { dispatch } = useAuthContext();
 
-  function handleSubmit(e) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     axios
       .post(`${apiUrl}/login`, { email, password })
       .then((result) => {
         if (result) {
           localStorage.setItem("user", JSON.stringify(result.data));
+          // localStorage.setItem('accessToken', result.data.token);
+          localStorage.setItem('refreshToken', result.data.refreshToken);
 
           //update auth context
           dispatch({ type: "LOGIN", payload: result.data });

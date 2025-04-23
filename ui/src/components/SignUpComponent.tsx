@@ -2,7 +2,7 @@ import "../css/SignUpComponentSryle.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import axios from "axios";
 import { useState } from "react";
-import { useAuthContext } from "../hooks/useAuthContext";
+import  useAuthContext  from "../hooks/useAuthContext";
 import { Link, useNavigate } from "react-router-dom";
 
 function SignUpComponent() {
@@ -13,9 +13,9 @@ function SignUpComponent() {
   const [errorMessage, setErrorMessage] = useState("");
   const { dispatch } = useAuthContext();
 
-  const apiUrl = "http://localhost:3004";
+  const apiUrl = import.meta.env.VITE_APIURL;
 
-  function handleSubmit(e) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     axios
       .post(`${apiUrl}/register`, { name, email, password })

@@ -1,32 +1,75 @@
 import "../css/ToDoComponentStyle.css";
-import { DndContext, useDraggable, useDroppable } from "@dnd-kit/core";
 import axios from "axios";
-import { SetStateAction, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { FaRegTrashAlt } from "react-icons/fa";
 import { CiEdit } from "react-icons/ci";
-import { useAuthContext } from "../hooks/useAuthContext";
+import useAuthContext from "../hooks/useAuthContext";
+
+// Define a proper Task interface
+interface Task {
+  _id: string;
+  text: string;
+  completed: boolean;
+}
 
 function ToDoComponent() {
-  const [tasks, setTasks] = useState([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [newTask, setNewTask] = useState("");
   const [isEditing, setEditing] = useState(false);
-  const [editingIndex, setEditingIndex] = useState(null);
+  const [editingIndex, setEditingIndex] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState("");
   const { user } = useAuthContext();
 
   const apiUrl = import.meta.env.VITE_APIURL;
 
+  function refreshAccessToken() {
+    const refreshToken = localStorage.getItem('refreshToken');
+    
+    return axios.post(`${apiUrl}/refresh`, { refreshToken })
+      .then(res => {
+        const newAccessToken = res.data.token;
+        
+        // Store the new access token in localStorage
+        localStorage.setItem('accessToken', newAccessToken);        
+        
+        return newAccessToken;
+      })
+      .catch(err => {
+        console.error("Failed to refresh token", err);
+        throw err;
+      });
+  }
 
   function fetchTasks() {
+    const accessToken = localStorage.getItem('accessToken');
     axios
       .get(`${apiUrl}/tasks`, {
-        headers: { Authorization: `Bearer ${user.token}` },
+        headers: { Authorization: `Bearer ${accessToken}` },
       })
       .then((response) => {     
-        const fetchedTasks = Array.isArray(response.data) ? response.data : [];   
-        setTasks(fetchedTasks);
+        const fetchedTasks: Task[] = Array.isArray(response.data) ? response.data : [];   
+        setTasks(fetchedTasks);       
+        
       })
-      .catch((err) => console.error("Error fetching tasks on load:", err));
+      .catch((err) => {
+        if (err.response?.status === 401) {
+          // Try to refresh and retry
+          refreshAccessToken()
+            .then((newToken) => {
+              return axios.get(`${apiUrl}/tasks`, {
+                headers: { Authorization: `Bearer ${newToken}` },
+              });
+            })
+            .then((res) => {
+              setTasks(res.data);
+            })
+            .catch((refreshErr) => {
+              console.error("Token refresh or retry failed", refreshErr);
+            });
+        } else {
+          console.error("Error fetching tasks", err);
+        }
+      });
   }
 
   useEffect(() => {
@@ -43,21 +86,22 @@ function ToDoComponent() {
     }
   }, []);
 
-  function handleInputChange(event) {
+  function handleInputChange(event: React.ChangeEvent<HTMLInputElement>) {
     setNewTask(event.target.value);
   }
 
-  function handleAdd(e) {
+  function handleAdd(e: React.FormEvent) {
     if (!user) {
       alert("Please log in");
       return;
     }
-
+  
     e.preventDefault();
     if (newTask.trim() === "") {
       alert("Task cannot be empty");
       return;
     }
+  
     const taskExists = tasks.some(
       (task) => task.text.toLowerCase() === newTask.toLowerCase()
     );
@@ -66,16 +110,21 @@ function ToDoComponent() {
       alert("Task already exists");
       return;
     }
+  
+    // Get the latest token from localStorage
+    const accessToken = localStorage.getItem("accessToken");
+  
     axios
       .post(
         `${apiUrl}/add`,
         { text: newTask },
-        { headers: { Authorization: `Bearer ${user.token}` } }
+        { headers: { Authorization: `Bearer ${accessToken}` } }
       )
       .then(() => {
+        // Fetch updated tasks
         axios
           .get(`${apiUrl}/tasks`, {
-            headers: { Authorization: `Bearer ${user.token}` },
+            headers: { Authorization: `Bearer ${accessToken}` },
           })
           .then((response) => {
             setTasks(response.data);
@@ -83,64 +132,97 @@ function ToDoComponent() {
           })
           .catch((err) => console.error("Error fetching tasks:", err));
       })
-      .catch((err) => console.error("Error adding task:", err));
+      .catch((err) => {
+        if (err.response?.status === 401) {
+          // If we get 401 error, refresh the token and retry
+          refreshAccessToken()
+            .then((newToken) => {
+              // Retry adding the task with the new token
+              return axios.post(
+                `${apiUrl}/add`,
+                { text: newTask },
+                { headers: { Authorization: `Bearer ${newToken}` } }
+              );
+            })
+            .then(() => {
+              // Retry fetching the tasks with the new token
+              return axios.get(`${apiUrl}/tasks`, {
+                headers: { Authorization: `Bearer ${newToken}` },
+              });
+            })
+            .then((response) => {
+              setTasks(response.data);
+              setNewTask("");
+            })
+            .catch((err) => {
+              console.error("Error adding task or fetching tasks after token refresh:", err);
+            });
+        } else {
+          console.error("Error adding task:", err);
+        }
+      });
   }
-
+  
   function deleteTask(taskId: string) {
-
     if (!user) {
       alert("Please log in");
       return;
     }
+
+    const accessToken = localStorage.getItem("accessToken");
+  
     axios
       .delete(`${apiUrl}/delete/${taskId}`, {
-        headers: { Authorization: `Bearer ${user.token}` },
+        headers: { Authorization: `Bearer ${accessToken}` },
       })
       .then(() => {
         // Remove the task from the frontend
         const updatedTasks = tasks.filter((task) => task._id !== taskId);
         setTasks(updatedTasks);
       })
-      .catch((err) => console.error("Error deleting task:", err));
+      .catch((err) => {
+        if (err.response?.status === 401) {
+          // If we get 401 error, refresh the token and retry
+          refreshAccessToken()
+            .then((newToken) => {
+              // Retry the delete with the new token
+              return axios.delete(`${apiUrl}/delete/${taskId}`, {
+                headers: { Authorization: `Bearer ${newToken}` },
+              });
+            })
+            .then(() => {
+              // Remove the task from the frontend
+              const updatedTasks = tasks.filter((task) => task._id !== taskId);
+              setTasks(updatedTasks);
+            })
+            .catch((refreshErr) => {
+              console.error("Error deleting task after token refresh:", refreshErr);
+            });
+        } else {
+          console.error("Error deleting task:", err);
+        }
+      });
   }
-
-  function moveTaskUp(index) {
-    if (index > 0) {
-      const updatedTasks = [...tasks];
-      [updatedTasks[index], updatedTasks[index - 1]] = [
-        updatedTasks[index - 1],
-        updatedTasks[index],
-      ];
-      setTasks(updatedTasks);
-    }
-  }
-  function moveTaskDown(index: number) {
-    if (index < tasks.length - 1) {
-      const updatedTasks = [...tasks];
-      [updatedTasks[index], updatedTasks[index + 1]] = [
-        updatedTasks[index + 1],
-        updatedTasks[index],
-      ];
-      setTasks(updatedTasks);
-    }
-  }
+  
 
   function startEditing(taskId: string) {
     const task = tasks.find((task) => task._id === taskId);
-  
-    setEditing(true);
-    setEditingIndex(taskId); 
-    setEditingTask(task.text);
+    
+    if (task) {
+      setEditing(true);
+      setEditingIndex(taskId); 
+      setEditingTask(task.text);
+    }
   }
 
-  function handleEditChange(event: {
-    target: { value: SetStateAction<string> };
-  }) {
+  function handleEditChange(event: React.ChangeEvent<HTMLInputElement>) {
     setEditingTask(event.target.value);
   }
 
   function saveEdit() {
-    const taskId = editingIndex; // Use the stored task ID
+    const taskId = editingIndex;
+    if (!taskId) return;
+  
     const taskIndex = tasks.findIndex((task) => task._id === taskId);
     if (taskIndex === -1) {
       console.error("Task not found");
@@ -159,12 +241,15 @@ function ToDoComponent() {
       return;
     }
   
+    // Get the latest token from localStorage
+    const accessToken = localStorage.getItem("accessToken");
+  
     axios
       .patch(
         `${apiUrl}/edit/${taskId}`,
         { text: updatedText },
         {
-          headers: { Authorization: `Bearer ${user.token}` },
+          headers: { Authorization: `Bearer ${accessToken}` },
         }
       )
       .then(() => {
@@ -175,36 +260,52 @@ function ToDoComponent() {
         setEditingIndex(null);
         setEditingTask("");
       })
-      .catch((err) => console.error("Error updating task:", err));
+      .catch((err) => {
+        if (err.response?.status === 401) {
+          // If we get 401 error, refresh the token and retry
+          refreshAccessToken()
+            .then((newToken) => {
+          
+              return axios.patch(
+                `${apiUrl}/edit/${taskId}`,
+                { text: updatedText },
+                {
+                  headers: { Authorization: `Bearer ${newToken}` },
+                }
+              );
+            })
+            .then(() => {
+              const updatedTasks = [...tasks];
+              updatedTasks[taskIndex].text = updatedText;
+              setTasks(updatedTasks);
+              setEditing(false);
+              setEditingIndex(null);
+              setEditingTask("");
+            })
+            .catch((refreshErr) => {
+              console.error("Error saving task after token refresh:", refreshErr);
+            });
+        } else {
+          console.error("Error updating task:", err);
+        }
+      });
   }
+  
 
-  function handleDragEvent(event: any) {
-    const { active, over } = event;
-
-    if (!over) return;
-
-    const oldIndex = active.id;
-    const newIndex = over.id;
-
-    if (oldIndex === newIndex) return;
-
-    const updatedTasks = [...tasks];
-    const [movedTask] = updatedTasks.splice(oldIndex, 1);
-    updatedTasks.splice(newIndex, 0, movedTask);
-
-    setTasks(updatedTasks);
-  }
-
-  function taskCompleted(taskId) {
+  function taskCompleted(taskId: string) {
     const taskIndex = tasks.findIndex((task) => task._id === taskId);
+    if (taskIndex === -1) return;
+  
     const updatedCompleted = !tasks[taskIndex].completed;
 
+    const accessToken = localStorage.getItem("accessToken");
+  
     axios
       .patch(
         `${apiUrl}/update/${taskId}`,
         { completed: updatedCompleted },
         {
-          headers: { Authorization: `Bearer ${user.token}` },
+          headers: { Authorization: `Bearer ${accessToken}` },
         }
       )
       .then(() => {
@@ -212,8 +313,34 @@ function ToDoComponent() {
         updatedTasks[taskIndex].completed = updatedCompleted;
         setTasks(updatedTasks);
       })
-      .catch((err) => console.error("Error updating task completion:", err));
+      .catch((err) => {
+        if (err.response?.status === 401) {
+          // If we get 401 error, refresh the token and retry
+          refreshAccessToken()
+            .then((newToken) => {        
+              return axios.patch(
+                `${apiUrl}/update/${taskId}`,
+                { completed: updatedCompleted },
+                {
+                  headers: { Authorization: `Bearer ${newToken}` },
+                }
+              );
+            })
+            .then(() => {
+              const updatedTasks = [...tasks];
+              updatedTasks[taskIndex].completed = updatedCompleted;
+              setTasks(updatedTasks);
+            })
+            .catch((refreshErr) => {
+              console.error("Error updating task completion after token refresh:", refreshErr);
+            });
+        } else {
+          console.error("Error updating task completion:", err);
+        }
+      });
   }
+  
+  
   return (
     <>
       <div className="add-task">
@@ -237,7 +364,7 @@ function ToDoComponent() {
             tasks.filter((task) => !task.completed).length > 0 ? (
               tasks
                 .filter((task) => !task.completed)
-                .map((task, index) => (
+                .map((task) => (
                   <li key={task._id}>
                     {isEditing && editingIndex === task._id ? (
                       <>
@@ -249,7 +376,7 @@ function ToDoComponent() {
                         <div className="button-container">
                           <button
                             className="save-button"
-                            onClick={() => saveEdit(editingIndex)}
+                            onClick={() => saveEdit()}
                           >
                             Save
                           </button>
@@ -306,7 +433,7 @@ function ToDoComponent() {
             {tasks.filter((task) => task.completed).length > 0 ? (
               tasks
                 .filter((task) => task.completed)
-                .map((task, index) => (
+                .map((task) => (
                   <li key={task._id}>
                     <input
                       type="checkbox"

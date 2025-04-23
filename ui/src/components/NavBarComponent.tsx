@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import {useLogOut} from "../hooks/useLogOut";
-import {useAuthContext} from "../hooks/useAuthContext";
+import useAuthContext from "../hooks/useAuthContext";
 import "../css/NavBarStyle.css";
 
 function NavBarComponent() {
