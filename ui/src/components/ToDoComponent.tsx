@@ -4,22 +4,26 @@ import { useEffect, useState } from "react";
 import { FaRegTrashAlt } from "react-icons/fa";
 import { CiEdit } from "react-icons/ci";
 import useAuthContext from "../hooks/useAuthContext";
+import TaskModal from "../modals/TaskModal"; 
 
-// Define a proper Task interface
+
 interface Task {
   _id: string;
   text: string;
+  description: string; 
   completed: boolean;
+  showDescription?: boolean; 
 }
 
 function ToDoComponent() {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [newTask, setNewTask] = useState("");
-  const [isEditing, setEditing] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState("");
+  const [editingDescription, setEditingDescription] = useState("");
   const { user } = useAuthContext();
-
+  
   const apiUrl = import.meta.env.VITE_APIURL;
 
   function refreshAccessToken() {
@@ -28,10 +32,7 @@ function ToDoComponent() {
     return axios.post(`${apiUrl}/refresh`, { refreshToken })
       .then(res => {
         const newAccessToken = res.data.token;
-        
-        // Store the new access token in localStorage
         localStorage.setItem('accessToken', newAccessToken);        
-        
         return newAccessToken;
       })
       .catch(err => {
@@ -49,7 +50,6 @@ function ToDoComponent() {
       .then((response) => {     
         const fetchedTasks: Task[] = Array.isArray(response.data) ? response.data : [];   
         setTasks(fetchedTasks);       
-        
       })
       .catch((err) => {
         if (err.response?.status === 401) {
@@ -86,38 +86,52 @@ function ToDoComponent() {
     }
   }, []);
 
-  function handleInputChange(event: React.ChangeEvent<HTMLInputElement>) {
-    setNewTask(event.target.value);
+  function handleOpenModal() {
+    setIsModalOpen(true);
   }
 
-  function handleAdd(e: React.FormEvent) {
+  function handleCloseModal() {
+    setIsModalOpen(false);
+  }
+
+  function handleOpenEditModal(taskId: string) {
+    const task = tasks.find((task) => task._id === taskId);
+    
+    if (task) {
+      setEditingIndex(taskId);
+      setEditingTask(task.text);
+      setEditingDescription(task.description || "");
+      setIsEditModalOpen(true);
+    }
+  }
+
+  function handleCloseEditModal() {
+    setIsEditModalOpen(false);
+    setEditingIndex(null);
+    setEditingTask("");
+    setEditingDescription("");
+  }
+
+  function handleAddTask(title: string, description: string) {
     if (!user) {
       alert("Please log in");
       return;
     }
   
-    e.preventDefault();
-    if (newTask.trim() === "") {
-      alert("Task cannot be empty");
-      return;
-    }
-  
     const taskExists = tasks.some(
-      (task) => task.text.toLowerCase() === newTask.toLowerCase()
+      (task) => task.text.toLowerCase() === title.toLowerCase()
     );
     if (taskExists) {
-      console.log("Task already exists");
       alert("Task already exists");
       return;
     }
   
-    // Get the latest token from localStorage
     const accessToken = localStorage.getItem("accessToken");
   
     axios
       .post(
         `${apiUrl}/add`,
-        { text: newTask },
+        { text: title, description: description },
         { headers: { Authorization: `Bearer ${accessToken}` } }
       )
       .then(() => {
@@ -128,7 +142,7 @@ function ToDoComponent() {
           })
           .then((response) => {
             setTasks(response.data);
-            setNewTask("");
+            handleCloseModal();
           })
           .catch((err) => console.error("Error fetching tasks:", err));
       })
@@ -140,25 +154,93 @@ function ToDoComponent() {
               // Retry adding the task with the new token
               return axios.post(
                 `${apiUrl}/add`,
-                { text: newTask },
+                { text: title, description: description },
                 { headers: { Authorization: `Bearer ${newToken}` } }
               );
             })
             .then(() => {
               // Retry fetching the tasks with the new token
               return axios.get(`${apiUrl}/tasks`, {
-                headers: { Authorization: `Bearer ${newToken}` },
+                headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
               });
             })
             .then((response) => {
               setTasks(response.data);
-              setNewTask("");
+              handleCloseModal();
             })
             .catch((err) => {
               console.error("Error adding task or fetching tasks after token refresh:", err);
             });
         } else {
           console.error("Error adding task:", err);
+        }
+      });
+  }
+
+  function saveEditedTask(title: string, description: string) {
+    const taskId = editingIndex;
+    if (!taskId) return;
+  
+    const taskIndex = tasks.findIndex((task) => task._id === taskId);
+    if (taskIndex === -1) {
+      console.error("Task not found");
+      return;
+    }
+  
+    if (title.trim() === "") {
+      alert("Task cannot be empty");
+      return;
+    }
+  
+    if (title.trim() === tasks[taskIndex].text && 
+        description === tasks[taskIndex].description) {
+      alert("No changes made");
+      handleCloseEditModal();
+      return;
+    }
+  
+    const accessToken = localStorage.getItem("accessToken");
+  
+    axios
+      .patch(
+        `${apiUrl}/edit/${taskId}`,
+        { text: title, description: description },
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }
+      )
+      .then(() => {
+        const updatedTasks = [...tasks];
+        updatedTasks[taskIndex].text = title;
+        updatedTasks[taskIndex].description = description;
+        setTasks(updatedTasks);
+        handleCloseEditModal();
+      })
+      .catch((err) => {
+        if (err.response?.status === 401) {
+          // If we get 401 error, refresh the token and retry
+          refreshAccessToken()
+            .then((newToken) => {
+              return axios.patch(
+                `${apiUrl}/edit/${taskId}`,
+                { text: title, description: description },
+                {
+                  headers: { Authorization: `Bearer ${newToken}` },
+                }
+              );
+            })
+            .then(() => {
+              const updatedTasks = [...tasks];
+              updatedTasks[taskIndex].text = title;
+              updatedTasks[taskIndex].description = description;
+              setTasks(updatedTasks);
+              handleCloseEditModal();
+            })
+            .catch((refreshErr) => {
+              console.error("Error saving task after token refresh:", refreshErr);
+            });
+        } else {
+          console.error("Error updating task:", err);
         }
       });
   }
@@ -203,94 +285,6 @@ function ToDoComponent() {
         }
       });
   }
-  
-
-  function startEditing(taskId: string) {
-    const task = tasks.find((task) => task._id === taskId);
-    
-    if (task) {
-      setEditing(true);
-      setEditingIndex(taskId); 
-      setEditingTask(task.text);
-    }
-  }
-
-  function handleEditChange(event: React.ChangeEvent<HTMLInputElement>) {
-    setEditingTask(event.target.value);
-  }
-
-  function saveEdit() {
-    const taskId = editingIndex;
-    if (!taskId) return;
-  
-    const taskIndex = tasks.findIndex((task) => task._id === taskId);
-    if (taskIndex === -1) {
-      console.error("Task not found");
-      return;
-    }
-  
-    const updatedText = editingTask;
-  
-    if (updatedText.trim() === "") {
-      alert("Task cannot be empty");
-      return;
-    }
-  
-    if (updatedText.trim() === tasks[taskIndex].text) {
-      alert("Task is the same");
-      return;
-    }
-  
-    // Get the latest token from localStorage
-    const accessToken = localStorage.getItem("accessToken");
-  
-    axios
-      .patch(
-        `${apiUrl}/edit/${taskId}`,
-        { text: updatedText },
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }
-      )
-      .then(() => {
-        const updatedTasks = [...tasks];
-        updatedTasks[taskIndex].text = updatedText;
-        setTasks(updatedTasks);
-        setEditing(false);
-        setEditingIndex(null);
-        setEditingTask("");
-      })
-      .catch((err) => {
-        if (err.response?.status === 401) {
-          // If we get 401 error, refresh the token and retry
-          refreshAccessToken()
-            .then((newToken) => {
-          
-              return axios.patch(
-                `${apiUrl}/edit/${taskId}`,
-                { text: updatedText },
-                {
-                  headers: { Authorization: `Bearer ${newToken}` },
-                }
-              );
-            })
-            .then(() => {
-              const updatedTasks = [...tasks];
-              updatedTasks[taskIndex].text = updatedText;
-              setTasks(updatedTasks);
-              setEditing(false);
-              setEditingIndex(null);
-              setEditingTask("");
-            })
-            .catch((refreshErr) => {
-              console.error("Error saving task after token refresh:", refreshErr);
-            });
-        } else {
-          console.error("Error updating task:", err);
-        }
-      });
-  }
-  
 
   function taskCompleted(taskId: string) {
     const taskIndex = tasks.findIndex((task) => task._id === taskId);
@@ -340,22 +334,42 @@ function ToDoComponent() {
       });
   }
   
+  // Toggle task description visibility
+  function toggleDescription(taskId: string) {
+    const taskIndex = tasks.findIndex((task) => task._id === taskId);
+    if (taskIndex === -1) return;
+
+    const updatedTasks = [...tasks];
+    updatedTasks[taskIndex].showDescription = !updatedTasks[taskIndex].showDescription;
+    setTasks(updatedTasks);
+  }
   
   return (
     <>
       <div className="add-task">
-        <form onSubmit={handleAdd}>
-          <input
-            type="text"
-            placeholder="Add a task..."
-            value={newTask}
-            onChange={handleInputChange}
-          />
-          <button className="add-button" type="submit">
-            Add
-          </button>
-        </form>
+        <button className="add-task-button" onClick={handleOpenModal}>
+          Add New Task
+        </button>
       </div>
+      
+      {/* Add New Task Modal */}
+      <TaskModal 
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onSubmit={handleAddTask}
+        modalTitle="Add New Task"
+      />
+      
+      {/* Edit Task Modal */}
+      <TaskModal 
+        isOpen={isEditModalOpen}
+        onClose={handleCloseEditModal}
+        onSubmit={saveEditedTask}
+        title={editingTask}
+        description={editingDescription}
+        modalTitle="Edit Task"
+      />
+      
       <div className="parent">
         <div className="to-do-list">
           <h1>To Do List</h1>
@@ -366,60 +380,50 @@ function ToDoComponent() {
                 .filter((task) => !task.completed)
                 .map((task) => (
                   <li key={task._id}>
-                    {isEditing && editingIndex === task._id ? (
-                      <>
-                        <input
-                          type="text"
-                          value={editingTask}
-                          onChange={handleEditChange}
-                        />
-                        <div className="button-container">
-                          <button
-                            className="save-button"
-                            onClick={() => saveEdit()}
-                          >
-                            Save
-                          </button>
-                          <button
-                            className="cancel-button"
-                            onClick={() => {
-                              setEditing(false);
-                              setEditingIndex(null);
-                              setEditingTask("");
-                            }}
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </>
-                    ) : (
-                      <>
+                    <div className="task-header">
+                      <div className="task-checkbox-title">
                         <input
                           type="checkbox"
                           checked={task.completed}
                           onChange={() => taskCompleted(task._id)}
                         />
                         <span
-                          className={`text ${
-                            task.completed ? "completed-task" : ""
-                          }`}
+                          className={`text ${task.completed ? "completed-task" : ""}`}
                         >
                           {task.text}
                         </span>
+                      </div>
+                      <div className="task-actions">
+                        <button
+                          className="edit-button"
+                          onClick={() => handleOpenEditModal(task._id)}
+                        >
+                          <CiEdit />
+                        </button>
                         <button
                           className="delete-button"
                           onClick={() => deleteTask(task._id)}
                         >
                           <FaRegTrashAlt />
                         </button>
-                        <button
-                          className="edit-button"
-                          onClick={() => startEditing(task._id)}
+                      </div>
+                    </div>
+                    
+                    {task.description ? (
+                      <div className="task-description">
+                        <button 
+                          className="toggle-description" 
+                          onClick={() => toggleDescription(task._id)}
                         >
-                          <CiEdit />
+                          {task.showDescription ? "Hide Description" : "Show Description"}
                         </button>
-                      </>
-                    )}
+                        {task.showDescription && (
+                          <div className="description-content">
+                            {task.description}
+                          </div>
+                        )}
+                      </div>
+                    ) : (<p className="description-missing">Description is missing</p>)}
                   </li>
                 ))
             ) : (
@@ -427,6 +431,7 @@ function ToDoComponent() {
             )}
           </ol>
         </div>
+        
         <div className="completed-list">
           <h1>Completed</h1>
           <ol>
@@ -435,18 +440,38 @@ function ToDoComponent() {
                 .filter((task) => task.completed)
                 .map((task) => (
                   <li key={task._id}>
-                    <input
-                      type="checkbox"
-                      checked={task.completed}
-                      onChange={() => taskCompleted(task._id)}
-                    />
-                    <span className="completed-task">{task.text}</span>
-                    <button
-                      className="completed-delete-button"
-                      onClick={() => deleteTask(task._id)}
-                    >
-                      <FaRegTrashAlt />
-                    </button>
+                    <div className="task-header">
+                      <div className="task-checkbox-title">
+                        <input
+                          type="checkbox"
+                          checked={task.completed}
+                          onChange={() => taskCompleted(task._id)}
+                        />
+                        <span className="completed-task">{task.text}</span>
+                      </div>
+                      <button
+                        className="completed-delete-button"
+                        onClick={() => deleteTask(task._id)}
+                      >
+                        <FaRegTrashAlt />
+                      </button>
+                    </div>
+                    
+                    {task.description ? (
+                      <div className="task-description">
+                        <button 
+                          className="toggle-description" 
+                          onClick={() => toggleDescription(task._id)}
+                        >
+                          {task.showDescription ? "Hide Description" : "Show Description"}
+                        </button>
+                        {task.showDescription && (
+                          <div className="description-content">
+                            {task.description}
+                          </div>
+                        )}
+                      </div>
+                    ) : (<p className="description-missing">Description is missing</p>)}
                   </li>
                 ))
             ) : (

@@ -14,13 +14,13 @@ const getAllTasks = async (req, res) => {
 
 // Controller to add a new task
 const addTask = async (req, res) => {
-  const { text } = req.body;
+  const { text, description } = req.body;
   if (!text) {
     return res.status(400).json({ error: "Task text is required" });
   }
   try {
     const user_id = req.user._id;
-    const newTask = await TodoModel.create({ text, completed: false, user_id });
+    const newTask = await TodoModel.create({ text, description, completed: false, user_id });
     res.status(201).json(newTask);
   } catch (err) {
     console.error("Error adding task:", err);
@@ -68,11 +68,11 @@ const updateTaskCompletion = async (req, res) => {
 // Controller to edit a task's text
 const editTask = async (req, res) => {
   const { id } = req.params;
-  const { text } = req.body;
+  const { text, description } = req.body;
   try {
     const updatedTask = await TodoModel.findByIdAndUpdate(
       id,
-      { text },
+      { text, description },
       { new: true }
     );
     if (updatedTask) {

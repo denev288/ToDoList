@@ -5,6 +5,10 @@ const TodoSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  description: {
+    type: String,
+    default: ''
+  },
   completed: {
     type: Boolean,
     default: false,
@@ -14,6 +18,8 @@ const TodoSchema = new mongoose.Schema({
     required: true
   }
 
+}, {
+  timestamps: true
 });
 
 const TodoModel = mongoose.model("Todo", TodoSchema);
