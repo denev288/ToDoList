@@ -13,7 +13,7 @@ function SignUpComponent() {
   const [errorMessage, setErrorMessage] = useState("");
   const { dispatch } = useAuthContext();
 
-  const apiUrl = "http://localhost:3004";
+  const apiUrl = import.meta.env.VITE_APIURL;
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
