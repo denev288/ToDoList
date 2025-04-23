@@ -38,8 +38,18 @@ function TaskModal({
     onSubmit(taskTitle, taskDescription);
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === "Escape") {
+      onClose();
+    } else if (e.key === "Enter" && !e.shiftKey) {
+  
+      e.preventDefault();
+      onSubmit(taskTitle, taskDescription);
+    }
+  };
+
   return (
-    <div className="modal-overlay" onClick={(e) => {
+    <div className="modal-overlay" onKeyDown={handleKeyDown} onClick={(e) => {
       // Close modal when clicking outside
       if (e.target === e.currentTarget) onClose();
     }}>
