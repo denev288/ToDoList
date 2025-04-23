@@ -38,7 +38,7 @@ function TaskModal({
     onSubmit(taskTitle, taskDescription);
   };
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = (e: any) => {
     if (e.key === "Escape") {
       onClose();
     } else if (e.key === "Enter" && !e.shiftKey) {
