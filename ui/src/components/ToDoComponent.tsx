@@ -27,37 +27,57 @@ function ToDoComponent() {
   const apiUrl = import.meta.env.VITE_APIURL;
 
   function refreshAccessToken() {
-    const refreshToken = localStorage.getItem('refreshToken');
-    
-    return axios.post(`${apiUrl}/refresh`, { refreshToken })
-      .then(res => {
+    const userFromStorage = JSON.parse(localStorage.getItem('user') || '{}');
+    const refreshToken = userFromStorage.refreshToken;
+
+    if (!refreshToken) {
+      console.error("Refresh token is missing");
+      return Promise.reject("Refresh token is missing");
+    }
+
+    return axios
+      .post(`${apiUrl}/refresh`, { refreshToken })
+      .then((res) => {
         const newAccessToken = res.data.token;
-        localStorage.setItem('accessToken', newAccessToken);        
+
+        // Update the user object in localStorage with the new token
+        userFromStorage.token = newAccessToken;
+        localStorage.setItem('user', JSON.stringify(userFromStorage));
+
         return newAccessToken;
       })
-      .catch(err => {
+      .catch((err) => {
         console.error("Failed to refresh token", err);
         throw err;
       });
   }
 
   function fetchTasks() {
-    const accessToken = localStorage.getItem('accessToken');
+    const userFromStorage = JSON.parse(localStorage.getItem('user') || '{}');
+    const accessToken = userFromStorage.token;
+
+    if (!user || !accessToken) {
+      console.error("User is not logged in or token is missing");
+      return;
+    }
+
+    console.log("Access token being sent:", accessToken);
+
     axios
       .get(`${apiUrl}/tasks`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       })
-      .then((response) => {     
-        const fetchedTasks: Task[] = Array.isArray(response.data) ? response.data : [];   
-        setTasks(fetchedTasks);       
+      .then((response) => {
+        console.log(response.data);
+        const fetchedTasks: Task[] = Array.isArray(response.data) ? response.data : [];
+        setTasks(fetchedTasks);
       })
       .catch((err) => {
         if (err.response?.status === 401) {
-          // Try to refresh and retry
           refreshAccessToken()
             .then((newToken) => {
               return axios.get(`${apiUrl}/tasks`, {
-                headers: { Authorization: `Bearer ${newToken}` },
+                headers: { Authorization: `Bearer ${newToken}` }
               });
             })
             .then((res) => {
@@ -113,7 +133,10 @@ function ToDoComponent() {
   }
 
   function handleAddTask(title: string, description: string) {
-    if (!user) {
+    const userFromStorage = JSON.parse(localStorage.getItem('user') || '{}');
+    const accessToken = userFromStorage.token;
+
+    if (!user || !accessToken) {
       alert("Please log in");
       return;
     }
@@ -126,8 +149,8 @@ function ToDoComponent() {
       return;
     }
   
-    const accessToken = localStorage.getItem("accessToken");
-  
+    console.log("Access token being sent for add task:", accessToken);
+
     axios
       .post(
         `${apiUrl}/add`,
@@ -161,7 +184,7 @@ function ToDoComponent() {
             .then(() => {
               // Retry fetching the tasks with the new token
               return axios.get(`${apiUrl}/tasks`, {
-                headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
+                headers: { Authorization: `Bearer ${JSON.parse(localStorage.getItem('user') || '{}').token}` },
               });
             })
             .then((response) => {
@@ -178,6 +201,14 @@ function ToDoComponent() {
   }
 
   function saveEditedTask(title: string, description: string) {
+    const userFromStorage = JSON.parse(localStorage.getItem('user') || '{}');
+    const accessToken = userFromStorage.token;
+
+    if (!user || !accessToken) {
+      console.error("User is not logged in or token is missing");
+      return;
+    }
+  
     const taskId = editingIndex;
     if (!taskId) return;
   
@@ -198,8 +229,6 @@ function ToDoComponent() {
       handleCloseEditModal();
       return;
     }
-  
-    const accessToken = localStorage.getItem("accessToken");
   
     axios
       .patch(
@@ -246,12 +275,13 @@ function ToDoComponent() {
   }
   
   function deleteTask(taskId: string) {
-    if (!user) {
+    const userFromStorage = JSON.parse(localStorage.getItem('user') || '{}');
+    const accessToken = userFromStorage.token;
+
+    if (!user || !accessToken) {
       alert("Please log in");
       return;
     }
-
-    const accessToken = localStorage.getItem("accessToken");
   
     axios
       .delete(`${apiUrl}/delete/${taskId}`, {
@@ -287,12 +317,18 @@ function ToDoComponent() {
   }
 
   function taskCompleted(taskId: string) {
+    const userFromStorage = JSON.parse(localStorage.getItem('user') || '{}');
+    const accessToken = userFromStorage.token;
+
+    if (!user || !accessToken) {
+      console.error("User is not logged in or token is missing");
+      return;
+    }
+  
     const taskIndex = tasks.findIndex((task) => task._id === taskId);
     if (taskIndex === -1) return;
   
     const updatedCompleted = !tasks[taskIndex].completed;
-
-    const accessToken = localStorage.getItem("accessToken");
   
     axios
       .patch(

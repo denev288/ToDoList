@@ -3,8 +3,12 @@ const TodoModel = require("../models/Todo");
 // Controller to fetch all tasks
 const getAllTasks = async (req, res) => {
   try {
-    const user_id = req.user._id;
-    const tasks = await TodoModel.find({ user_id });
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ error: "Unauthorized: User not authenticated" });
+    }
+
+    const user_id = req.user._id; 
+    const tasks = await TodoModel.find({ user_id }); 
     res.json(tasks);
   } catch (err) {
     console.error("Error fetching tasks:", err);
