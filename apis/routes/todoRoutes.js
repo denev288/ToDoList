@@ -6,6 +6,7 @@ const {
   updateTaskCompletion,
   editTask,
 } = require("../controllers/todoController");
+const { shareTask } = require("../controllers/taskController");
 const requireAuth = require("../middleware/requireAuth");
 
 const router = express.Router();
@@ -21,5 +22,7 @@ router.delete("/delete/:id", deleteTask); // Delete a task
 router.patch("/update/:id", updateTaskCompletion); // Update task completion
 
 router.patch("/edit/:id", editTask); // Edit task text
+
+router.post("/share/:taskId", shareTask); // Share a task with another user
 
 module.exports = router;

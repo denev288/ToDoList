@@ -3,8 +3,10 @@ const express = require('express');
 const {
   loginUser,
   createRegistration,
-  refreshToken
+  refreshToken,
+  getNotifications
 } = require('../controllers/userController');
+const requireAuth = require("../middleware/requireAuth");
 
 const router = express.Router();
 
@@ -14,5 +16,6 @@ router.post('/login', loginUser);
 router.post('/register', createRegistration);
 
 router.post('/refresh', refreshToken);
+
 
 module.exports = router;

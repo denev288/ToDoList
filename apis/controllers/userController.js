@@ -1,8 +1,6 @@
 const UserModel = require("../models/UserModel");
 const jwt = require("jsonwebtoken");
 
-
-
 const createToken = (_id) => {
     return jwt.sign({ _id }, process.env.SECRET, { expiresIn: "10s" }); // access token
 };
@@ -76,10 +74,24 @@ const createRegistration = async (req, res) => {
     }
   };
 
-  
+// Fetch notifications for the logged-in user
+async function getNotifications(req, res) {
+  try {
+    const user = await UserModel.findById(req.user._id).select("notifications");
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.status(200).json(user.notifications);
+  } catch (err) {
+    console.error("Error fetching notifications:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+}
 
 module.exports = {
     loginUser,
     createRegistration, 
-    refreshToken
+    refreshToken,
+    getNotifications
 };
