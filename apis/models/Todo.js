@@ -7,7 +7,7 @@ const TodoSchema = new mongoose.Schema({
   },
   description: {
     type: String,
-    default: ''
+    default: '',
   },
   completed: {
     type: Boolean,
@@ -15,11 +15,14 @@ const TodoSchema = new mongoose.Schema({
   },
   user_id: {
     type: String,
-    required: true
-  }
-
+    required: true,
+  },
+  sharedBy: {
+    type: String, 
+    default: null, // Null if the task is owned by the user
+  },
 }, {
-  timestamps: true
+  timestamps: true,
 });
 
 const TodoModel = mongoose.model("Todo", TodoSchema);

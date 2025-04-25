@@ -2,17 +2,18 @@ import "../css/ToDoComponentStyle.css";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { FaRegTrashAlt } from "react-icons/fa";
-import { CiEdit } from "react-icons/ci";
+import { CiEdit, CiShare2 } from "react-icons/ci";
 import useAuthContext from "../hooks/useAuthContext";
 import TaskModal from "../modals/TaskModal"; 
-
+import ShareModal from "../modals/ShareModal";
 
 interface Task {
   _id: string;
   text: string;
   description: string; 
   completed: boolean;
-  showDescription?: boolean; 
+  showDescription?: boolean;
+  sharedBy?: string; // Add sharedBy field to indicate if the task is shared
 }
 
 function ToDoComponent() {
@@ -22,8 +23,11 @@ function ToDoComponent() {
   const [editingIndex, setEditingIndex] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState("");
   const [editingDescription, setEditingDescription] = useState("");
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [sharingTaskId, setSharingTaskId] = useState<string | null>(null);
   const { user } = useAuthContext();
-  
+  const [shareError, setShareError] = useState<string>("");
+
   const apiUrl = import.meta.env.VITE_APIURL;
 
   function refreshAccessToken() {
@@ -53,22 +57,20 @@ function ToDoComponent() {
   }
 
   function fetchTasks() {
-    const userFromStorage = JSON.parse(localStorage.getItem('user') || '{}');
+    const userFromStorage = JSON.parse(localStorage.getItem("user") || "{}");
     const accessToken = userFromStorage.token;
-
+  
     if (!user || !accessToken) {
       console.error("User is not logged in or token is missing");
       return;
     }
-
-    console.log("Access token being sent:", accessToken);
-
+  
     axios
       .get(`${apiUrl}/tasks`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       })
       .then((response) => {
-        console.log(response.data);
+
         const fetchedTasks: Task[] = Array.isArray(response.data) ? response.data : [];
         setTasks(fetchedTasks);
       })
@@ -94,17 +96,9 @@ function ToDoComponent() {
 
   useEffect(() => {
     if (user) {
-      fetchTasks();
+      fetchTasks(); // Fetch all tasks, including shared ones
     }
   }, [user]);
-
-  useEffect(() => {
-    console.log("Component rendered");
-
-    return() => {
-      console.log("Component destroyed");
-    }
-  }, []);
 
   function handleOpenModal() {
     setIsModalOpen(true);
@@ -132,6 +126,16 @@ function ToDoComponent() {
     setEditingDescription("");
   }
 
+  function handleOpenShareModal(taskId: string) {
+    setSharingTaskId(taskId);
+    setIsShareModalOpen(true);
+  }
+
+  function handleCloseShareModal() {
+    setSharingTaskId(null);
+    setIsShareModalOpen(false);
+  }
+
   function handleAddTask(title: string, description: string) {
     const userFromStorage = JSON.parse(localStorage.getItem('user') || '{}');
     const accessToken = userFromStorage.token;
@@ -148,8 +152,6 @@ function ToDoComponent() {
       alert("Task already exists");
       return;
     }
-  
-    console.log("Access token being sent for add task:", accessToken);
 
     axios
       .post(
@@ -158,23 +160,13 @@ function ToDoComponent() {
         { headers: { Authorization: `Bearer ${accessToken}` } }
       )
       .then(() => {
-        // Fetch updated tasks
-        axios
-          .get(`${apiUrl}/tasks`, {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          })
-          .then((response) => {
-            setTasks(response.data);
-            handleCloseModal();
-          })
-          .catch((err) => console.error("Error fetching tasks:", err));
+        fetchTasks(); // Refresh tasks after adding a new one
+        handleCloseModal();
       })
       .catch((err) => {
         if (err.response?.status === 401) {
-          // If we get 401 error, refresh the token and retry
           refreshAccessToken()
             .then((newToken) => {
-              // Retry adding the task with the new token
               return axios.post(
                 `${apiUrl}/add`,
                 { text: title, description: description },
@@ -182,17 +174,11 @@ function ToDoComponent() {
               );
             })
             .then(() => {
-              // Retry fetching the tasks with the new token
-              return axios.get(`${apiUrl}/tasks`, {
-                headers: { Authorization: `Bearer ${JSON.parse(localStorage.getItem('user') || '{}').token}` },
-              });
-            })
-            .then((response) => {
-              setTasks(response.data);
+              fetchTasks(); // Refresh tasks after retrying
               handleCloseModal();
             })
             .catch((err) => {
-              console.error("Error adding task or fetching tasks after token refresh:", err);
+              console.error("Error adding task after token refresh:", err);
             });
         } else {
           console.error("Error adding task:", err);
@@ -201,9 +187,9 @@ function ToDoComponent() {
   }
 
   function saveEditedTask(title: string, description: string) {
-    const userFromStorage = JSON.parse(localStorage.getItem('user') || '{}');
+    const userFromStorage = JSON.parse(localStorage.getItem("user") || "{}");
     const accessToken = userFromStorage.token;
-
+  
     if (!user || !accessToken) {
       console.error("User is not logged in or token is missing");
       return;
@@ -223,8 +209,10 @@ function ToDoComponent() {
       return;
     }
   
-    if (title.trim() === tasks[taskIndex].text && 
-        description === tasks[taskIndex].description) {
+    if (
+      title.trim() === tasks[taskIndex].text &&
+      description === tasks[taskIndex].description
+    ) {
       alert("No changes made");
       handleCloseEditModal();
       return;
@@ -247,7 +235,7 @@ function ToDoComponent() {
       })
       .catch((err) => {
         if (err.response?.status === 401) {
-          // If we get 401 error, refresh the token and retry
+          // If we get a 401 error, refresh the token and retry
           refreshAccessToken()
             .then((newToken) => {
               return axios.patch(
@@ -273,11 +261,66 @@ function ToDoComponent() {
         }
       });
   }
-  
-  function deleteTask(taskId: string) {
-    const userFromStorage = JSON.parse(localStorage.getItem('user') || '{}');
-    const accessToken = userFromStorage.token;
 
+  function handleShareTask(email: string, message: string) {
+    const userFromStorage = JSON.parse(localStorage.getItem("user") || "{}");
+    const accessToken = userFromStorage.token;
+  
+    if (!user || !accessToken) {
+      alert("Please log in");
+      return;
+    }
+  
+    if (!sharingTaskId) {
+      console.error("No task selected for sharing");
+      return;
+    }
+
+    setShareError(""); // Clear previous errors
+  
+    axios
+      .post(
+        `${apiUrl}/share/${sharingTaskId}`,
+        { email, message },
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      )
+      .then(() => {
+        alert("Task shared successfully");
+        handleCloseShareModal();
+      })
+      .catch((err) => {
+        if (err.response?.status === 401) {
+          refreshAccessToken()
+            .then((newToken) => {
+              return axios.post(
+                `${apiUrl}/share/${sharingTaskId}`,
+                { email, message },
+                { headers: { Authorization: `Bearer ${newToken}` } }
+              );
+            })
+            .then(() => {
+              alert("Task shared successfully");
+              handleCloseShareModal();
+            })
+            .catch((refreshErr) => {
+              if (refreshErr.response?.data?.error) {
+                setShareError(refreshErr.response.data.error);
+              } else {
+                setShareError("Error sharing task. Please try again.");
+              }
+            });
+        } else if (err.response?.data?.error) {
+          setShareError(err.response.data.error);
+        } else {
+          setShareError("Error sharing task. Please try again.");
+        }
+      });
+  }
+
+  function deleteTask(taskId: string) {
+    const userFromStorage = JSON.parse(localStorage.getItem("user") || "{}");
+    const accessToken = userFromStorage.token;
+  
     if (!user || !accessToken) {
       alert("Please log in");
       return;
@@ -294,10 +337,9 @@ function ToDoComponent() {
       })
       .catch((err) => {
         if (err.response?.status === 401) {
-          // If we get 401 error, refresh the token and retry
+          // Refresh token and retry deleting the task
           refreshAccessToken()
             .then((newToken) => {
-              // Retry the delete with the new token
               return axios.delete(`${apiUrl}/delete/${taskId}`, {
                 headers: { Authorization: `Bearer ${newToken}` },
               });
@@ -317,16 +359,19 @@ function ToDoComponent() {
   }
 
   function taskCompleted(taskId: string) {
-    const userFromStorage = JSON.parse(localStorage.getItem('user') || '{}');
+    const userFromStorage = JSON.parse(localStorage.getItem("user") || "{}");
     const accessToken = userFromStorage.token;
-
+  
     if (!user || !accessToken) {
       console.error("User is not logged in or token is missing");
       return;
     }
   
     const taskIndex = tasks.findIndex((task) => task._id === taskId);
-    if (taskIndex === -1) return;
+    if (taskIndex === -1) {
+      console.error("Task not found");
+      return;
+    }
   
     const updatedCompleted = !tasks[taskIndex].completed;
   
@@ -345,9 +390,9 @@ function ToDoComponent() {
       })
       .catch((err) => {
         if (err.response?.status === 401) {
-          // If we get 401 error, refresh the token and retry
+          // Refresh token and retry updating the task completion status
           refreshAccessToken()
-            .then((newToken) => {        
+            .then((newToken) => {
               return axios.patch(
                 `${apiUrl}/update/${taskId}`,
                 { completed: updatedCompleted },
@@ -369,17 +414,19 @@ function ToDoComponent() {
         }
       });
   }
-  
-  // Toggle task description visibility
+
   function toggleDescription(taskId: string) {
     const taskIndex = tasks.findIndex((task) => task._id === taskId);
-    if (taskIndex === -1) return;
-
+    if (taskIndex === -1) {
+      console.error("Task not found:", taskId);
+      return;
+    }
+  
     const updatedTasks = [...tasks];
     updatedTasks[taskIndex].showDescription = !updatedTasks[taskIndex].showDescription;
     setTasks(updatedTasks);
   }
-  
+
   return (
     <>
       <div className="add-task">
@@ -406,6 +453,15 @@ function ToDoComponent() {
         modalTitle="Edit Task"
       />
       
+      {/* Share Task Modal */}
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={handleCloseShareModal}
+        onSubmit={handleShareTask}
+        error={shareError}
+        currentUserEmail={user?.email}
+      />
+
       <div className="parent">
         <div className="to-do-list">
           <h1>To Do List</h1>
@@ -432,6 +488,12 @@ function ToDoComponent() {
                       <div className="task-actions">
                         <button
                           className="edit-button"
+                          onClick={() => handleOpenShareModal(task._id)}
+                        >
+                          <CiShare2 />
+                        </button>
+                        <button
+                          className="edit-button"
                           onClick={() => handleOpenEditModal(task._id)}
                         >
                           <CiEdit />
@@ -445,6 +507,10 @@ function ToDoComponent() {
                       </div>
                     </div>
                     
+                    <p className="task-shared-status">
+                      {task.sharedBy ? `📤 Shared by: ${task.sharedBy}` : '👤 Own task'}
+                    </p>
+
                     {task.description ? (
                       <div className="task-description">
                         <button 
@@ -493,6 +559,10 @@ function ToDoComponent() {
                       </button>
                     </div>
                     
+                    <p className="task-shared-status">
+                      {task.sharedBy ? `📤 Shared by: ${task.sharedBy}` : '👤 Own task'}
+                    </p>
+
                     {task.description ? (
                       <div className="task-description">
                         <button 
