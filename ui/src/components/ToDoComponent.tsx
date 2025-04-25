@@ -12,7 +12,8 @@ interface Task {
   text: string;
   description: string; 
   completed: boolean;
-  showDescription?: boolean; 
+  showDescription?: boolean;
+  sharedBy?: string; // Add sharedBy field to indicate if the task is shared
 }
 
 function ToDoComponent() {
@@ -25,7 +26,8 @@ function ToDoComponent() {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [sharingTaskId, setSharingTaskId] = useState<string | null>(null);
   const { user } = useAuthContext();
-  
+  const [shareError, setShareError] = useState<string>("");
+
   const apiUrl = import.meta.env.VITE_APIURL;
 
   function refreshAccessToken() {
@@ -55,19 +57,20 @@ function ToDoComponent() {
   }
 
   function fetchTasks() {
-    const userFromStorage = JSON.parse(localStorage.getItem('user') || '{}');
+    const userFromStorage = JSON.parse(localStorage.getItem("user") || "{}");
     const accessToken = userFromStorage.token;
-
+  
     if (!user || !accessToken) {
       console.error("User is not logged in or token is missing");
       return;
     }
-
+  
     axios
       .get(`${apiUrl}/tasks`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       })
       .then((response) => {
+
         const fetchedTasks: Task[] = Array.isArray(response.data) ? response.data : [];
         setTasks(fetchedTasks);
       })
@@ -272,6 +275,8 @@ function ToDoComponent() {
       console.error("No task selected for sharing");
       return;
     }
+
+    setShareError(""); // Clear previous errors
   
     axios
       .post(
@@ -285,7 +290,6 @@ function ToDoComponent() {
       })
       .catch((err) => {
         if (err.response?.status === 401) {
-          // Refresh token and retry sharing the task
           refreshAccessToken()
             .then((newToken) => {
               return axios.post(
@@ -299,10 +303,16 @@ function ToDoComponent() {
               handleCloseShareModal();
             })
             .catch((refreshErr) => {
-              console.error("Error sharing task after token refresh:", refreshErr);
+              if (refreshErr.response?.data?.error) {
+                setShareError(refreshErr.response.data.error);
+              } else {
+                setShareError("Error sharing task. Please try again.");
+              }
             });
+        } else if (err.response?.data?.error) {
+          setShareError(err.response.data.error);
         } else {
-          console.error("Error sharing task:", err);
+          setShareError("Error sharing task. Please try again.");
         }
       });
   }
@@ -448,6 +458,8 @@ function ToDoComponent() {
         isOpen={isShareModalOpen}
         onClose={handleCloseShareModal}
         onSubmit={handleShareTask}
+        error={shareError}
+        currentUserEmail={user?.email}
       />
 
       <div className="parent">
@@ -495,6 +507,10 @@ function ToDoComponent() {
                       </div>
                     </div>
                     
+                    <p className="task-shared-status">
+                      {task.sharedBy ? `📤 Shared by: ${task.sharedBy}` : '👤 Own task'}
+                    </p>
+
                     {task.description ? (
                       <div className="task-description">
                         <button 
@@ -543,6 +559,10 @@ function ToDoComponent() {
                       </button>
                     </div>
                     
+                    <p className="task-shared-status">
+                      {task.sharedBy ? `📤 Shared by: ${task.sharedBy}` : '👤 Own task'}
+                    </p>
+
                     {task.description ? (
                       <div className="task-description">
                         <button 

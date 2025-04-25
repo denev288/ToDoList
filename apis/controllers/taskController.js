@@ -4,9 +4,20 @@ const Todo = require("../models/Todo");
 // Share task controller
 async function shareTask(req, res) {
   const { taskId } = req.params;
-  const { email, message } = req.body;
-
+  const { email } = req.body;
+  
   try {
+    // Get the sender's user info
+    const sender = await User.findById(req.user._id);
+    if (!sender) {
+      return res.status(404).json({ error: "Sender not found" });
+    }
+
+    // Prevent sharing with self
+    if (sender.email === email) {
+      return res.status(400).json({ error: "Cannot share task with yourself" });
+    }
+
     // Find the task to be shared
     const task = await Todo.findById(taskId);
     if (!task) {
@@ -16,9 +27,21 @@ async function shareTask(req, res) {
 
     // Check if the recipient exists
     const recipient = await User.findOne({ email });
+
     if (!recipient) {
-     
-      console.error("Recipient not found:", email); return res.status(404).json({ error: "Recipient not found" });
+      console.error("Recipient not found:", email); 
+      return res.status(404).json({ error: "Recipient not found" });
+    }
+
+    // Check if task already shared with this recipient
+    const existingSharedTask = await Todo.findOne({
+      text: task.text,
+      user_id: recipient._id,
+      sharedBy: sender.email
+    });
+
+    if (existingSharedTask) {
+      return res.status(400).json({ error: "Task already shared with this recipient" });
     }
 
     // Create a new task for the recipient
@@ -26,8 +49,8 @@ async function shareTask(req, res) {
       text: task.text,
       description: task.description,
       completed: false,
-      user_id: recipient._id, // Assign the task to the recipient
-      sharedBy: req.user.name, // Add information about who shared the task
+      user_id: recipient._id,
+      sharedBy: sender.email, // Set the sender's email here
     });
 
     await sharedTask.save();
