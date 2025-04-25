@@ -7,13 +7,11 @@ async function shareTask(req, res) {
   const { email } = req.body;
   
   try {
-    // Get the sender's user info
     const sender = await User.findById(req.user._id);
     if (!sender) {
       return res.status(404).json({ error: "Sender not found" });
     }
 
-    // Prevent sharing with self
     if (sender.email === email) {
       return res.status(400).json({ error: "Cannot share task with yourself" });
     }

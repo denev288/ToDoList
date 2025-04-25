@@ -43,17 +43,8 @@ const loginUser = async (req, res) => {
     try {
 
         const user = await UserModel.login(email, password);
-        //create token
         const token = createToken(user._id);
         const refreshToken = createRefreshToken(user._id)
-        
-        
-        // res.cookie('refreshToken', refreshToken, {
-        //     httpOnly: true,   
-        //     secure: process.env.RREFRESH_TOKEN_SECRET === 'production', 
-        //     sameSite: 'Strict', 
-        //     maxAge: 3 * 24 * 60 * 60 * 1000 
-        // });
 
         res.status(200).json({email, token, refreshToken});
     } catch(error){
@@ -65,8 +56,6 @@ const createRegistration = async (req, res) => {
     const { name, email, password } = req.body;
     try {
         const user = await UserModel.signup(name, email, password);
-
-        //create token
         const token = createToken(user._id);
         res.status(200).json({email, token});
     } catch(error){
