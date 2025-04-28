@@ -63,3 +63,36 @@
   text-align: center;
   color: #666;
 }
+
+.friend-request-actions {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.friend-request-actions button {
+  padding: 4px 12px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.2s;
+}
+
+.accept-btn {
+  background-color: #4caf50;
+  color: white;
+}
+
+.accept-btn:hover {
+  background-color: #45a049;
+}
+
+.reject-btn {
+  background-color: #f44336;
+  color: white;
+}
+
+.reject-btn:hover {
+  background-color: #da190b;
+}

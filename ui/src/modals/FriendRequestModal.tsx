@@ -1,6 +1,5 @@
 import { useState } from "react";
 import axios from "axios";
-import useAuthContext from "../hooks/useAuthContext";
 import "../css/FriendRequestModalStyle.css";
 
 interface FriendRequestModalProps {

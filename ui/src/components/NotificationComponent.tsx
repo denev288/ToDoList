@@ -10,6 +10,7 @@ interface Notification {
   message: string;
   read: boolean;
   createdAt: string;
+  relatedId?: string; // Add this for friend request reference
 }
 
 function NotificationIcon() {
@@ -57,7 +58,92 @@ function NotificationIcon() {
     }
   }, [user]);
 
+  const handleFriendRequest = async (notificationId: string, relatedId: string, action: 'accept' | 'reject') => {
+    const userFromStorage = JSON.parse(localStorage.getItem('user') || '{}');
+    const accessToken = userFromStorage.token;
+
+    if (!relatedId) {
+      console.error('No related friend request ID found');
+      alert('Error: Invalid friend request');
+      return;
+    }
+
+    try {      
+      await axios.post(
+        `${apiUrl}/friends/handle`,
+        { requestId: relatedId, action },
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );      
+      // Remove the notification from the list
+      setNotifications(notifications.filter(n => n._id !== notificationId));
+      
+      // Show success message
+      alert(`Friend request ${action}ed successfully`);
+    } catch (err: any) {
+      console.error('Friend request error:', err.response?.data || err);
+      
+      if (err.response?.status === 401) {
+        try {
+          const userData = JSON.parse(localStorage.getItem('user') || '{}');
+          const refreshResponse = await axios.post(`${apiUrl}/refresh`, {
+            refreshToken: userData.refreshToken
+          });
+          
+          userData.token = refreshResponse.data.token;
+          localStorage.setItem('user', JSON.stringify(userData));
+          
+          // Retry with new token
+          await axios.post(
+            `${apiUrl}/friends/handle`,
+            { requestId: relatedId, action },
+            { headers: { Authorization: `Bearer ${refreshResponse.data.token}` } }
+          );
+          
+          setNotifications(notifications.filter(n => n._id !== notificationId));
+          alert(`Friend request ${action}ed successfully`);
+        } catch (refreshErr) {
+          console.error('Error after token refresh:', refreshErr);
+          alert('Session expired. Please login again.');
+        }
+      } else {
+        alert(err.response?.data?.message || 'Error handling friend request');
+      }
+    }
+  };
+
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  const renderNotificationContent = (notification: Notification) => {
+    if (notification.type === 'friend_request' && notification.relatedId) {
+      return (
+        <>
+          <p>{notification.message}</p>
+          <div className="friend-request-actions">
+            <button 
+              className="accept-btn"
+              onClick={() => handleFriendRequest(notification._id, notification.relatedId!, 'accept')}
+            >
+              Accept
+            </button>
+            <button 
+              className="reject-btn"
+              onClick={() => handleFriendRequest(notification._id, notification.relatedId!, 'reject')}
+            >
+              Reject
+            </button>
+          </div>
+          <small>{new Date(notification.createdAt).toLocaleString()}</small>
+        </>
+      );
+    }
+    
+    return (
+      <>
+        <p>{notification.message}</p>
+        <small>{new Date(notification.createdAt).toLocaleString()}</small>
+      </>
+    );
+  };
 
   return (
     <div className="notification-container">
@@ -77,8 +163,7 @@ function NotificationIcon() {
                 key={notification._id} 
                 className={`notification-item ${!notification.read ? 'unread' : ''}`}
               >
-                <p>{notification.message}</p>
-                <small>{new Date(notification.createdAt).toLocaleString()}</small>
+                {renderNotificationContent(notification)}
               </div>
             ))
           ) : (

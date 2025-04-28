@@ -64,7 +64,26 @@ const handleFriendRequest = async (req, res) => {
   const { requestId, action } = req.body;
 
   try {
+    console.log('Handling friend request:', { requestId, action });
+
+    if (!requestId || !action) {
+      return res.status(400).json({ message: "Request ID and action are required" });
+    }
+
+    // Map frontend actions to model enum values
+    const statusMap = {
+      'accept': 'accepted',
+      'reject': 'rejected'
+    };
+
+    const status = statusMap[action];
+    if (!status) {
+      return res.status(400).json({ message: "Invalid action" });
+    }
+
     const request = await FriendRequestModel.findById(requestId);
+    console.log('Found request:', request);
+
     if (!request) {
       return res.status(404).json({ message: "Request not found" });
     }
@@ -80,12 +99,17 @@ const handleFriendRequest = async (req, res) => {
       ]);
     }
 
-    request.status = action;
+    request.status = status; // Use mapped status value
     await request.save();
 
     res.status(200).json({ message: `Friend request ${action}ed` });
   } catch (error) {
-    res.status(500).json({ message: "Error handling friend request" });
+    console.error("Friend request error:", error);
+    res.status(500).json({ 
+      message: "Error handling friend request", 
+      error: error.message,
+      details: error.errors // Include validation errors in response
+    });
   }
 };
 
