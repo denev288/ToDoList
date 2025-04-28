@@ -1,21 +1,23 @@
 const express = require('express');
-
-const {
-  loginUser,
-  createRegistration,
-  refreshToken,
-  getNotifications
-} = require('../controllers/userController');
+const { loginUser, createRegistration, refreshToken, searchUsers } = require('../controllers/userController');
+const { getNotifications, markNotificationsAsRead } = require('../controllers/notificationController');
+const { sendFriendRequest, getPendingRequests, handleFriendRequest } = require('../controllers/friendRequestController');
 const requireAuth = require("../middleware/requireAuth");
 
 const router = express.Router();
 
-// Route to handle user login
+// Public routes
 router.post('/login', loginUser);
-// Route to handle user registration
 router.post('/register', createRegistration);
-
 router.post('/refresh', refreshToken);
 
+// Protected routes
+router.use(requireAuth);
+router.post('/search', searchUsers);  // Changed from GET to POST
+router.get('/notifications', getNotifications);
+router.post('/notifications/read', markNotificationsAsRead);
+router.post('/friends/request', sendFriendRequest);
+router.get('/friends/requests', getPendingRequests);
+router.post('/friends/handle', handleFriendRequest);
 
 module.exports = router;

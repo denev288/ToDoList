@@ -12,31 +12,31 @@ nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 20px; /* Adjust padding as needed */
+  padding: 10px 20px;
 }
 
 .navbar1, .navbar2 {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   width: 100%;
 }
 
 .navbar-brand {
-  margin-right: 15px;
+  margin-right: auto;
   text-decoration: none;
-  color: #000; /* Adjust text color as needed */
+  color: #000;
 }
 
 .welcome {
-  margin-right: 15px;
+  margin-right: auto;
   font-weight: bold;
 }
 
 .btn {
+  margin-left: auto;
   cursor: pointer;
 }
-
 
 body {
   padding-top: 60px; 
