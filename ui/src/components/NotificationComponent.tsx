@@ -20,6 +20,29 @@ function NotificationIcon() {
   const { user } = useAuthContext();
   const apiUrl = import.meta.env.VITE_APIURL;
 
+  function refreshAccessToken() {
+    const userFromStorage = JSON.parse(localStorage.getItem('user') || '{}');
+    const refreshToken = userFromStorage.refreshToken;
+
+    if (!refreshToken) {
+      console.error("Refresh token is missing");
+      return Promise.reject("Refresh token is missing");
+    }
+
+    return axios
+      .post(`${apiUrl}/refresh`, { refreshToken })
+      .then((res) => {
+        const newAccessToken = res.data.token;
+        userFromStorage.token = newAccessToken;
+        localStorage.setItem('user', JSON.stringify(userFromStorage));
+        return newAccessToken;
+      })
+      .catch((err) => {
+        console.error("Failed to refresh token", err);
+        throw err;
+      });
+  }
+
   const fetchNotifications = async () => {
     try {
       const response = await axios.get(`${apiUrl}/notifications`, {
@@ -50,6 +73,69 @@ function NotificationIcon() {
       } else {
         console.error('Error fetching notifications:', error);
       }
+    }
+  };
+
+  const markAsRead = async () => {
+    const userFromStorage = JSON.parse(localStorage.getItem('user') || '{}');
+    const accessToken = userFromStorage.token;
+
+    try {
+      await axios.post(
+        `${apiUrl}/notifications/read`,
+        {},
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      
+      // Update local state to mark all as read
+      setNotifications(notifications.map(n => ({ ...n, read: true })));
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        try {
+          const refreshResponse = await refreshAccessToken();
+          await axios.post(
+            `${apiUrl}/notifications/read`,
+            {},
+            { headers: { Authorization: `Bearer ${refreshResponse}` } }
+          );
+          setNotifications(notifications.map(n => ({ ...n, read: true })));
+        } catch (refreshErr) {
+          console.error('Error marking notifications as read:', refreshErr);
+        }
+      }
+    }
+  };
+
+  const clearNotifications = async () => {
+    const userFromStorage = JSON.parse(localStorage.getItem('user') || '{}');
+    const accessToken = userFromStorage.token;
+
+    try {
+      await axios.delete(
+        `${apiUrl}/notifications/clear`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      setNotifications([]);
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        try {
+          const refreshResponse = await refreshAccessToken();
+          await axios.delete(
+            `${apiUrl}/notifications/clear`,
+            { headers: { Authorization: `Bearer ${refreshResponse}` } }
+          );
+          setNotifications([]);
+        } catch (refreshErr) {
+          console.error('Error clearing notifications:', refreshErr);
+        }
+      }
+    }
+  };
+
+  const handleDropdownToggle = () => {
+    setShowDropdown(!showDropdown);
+    if (!showDropdown && unreadCount > 0) {
+      markAsRead();
     }
   };
 
@@ -150,7 +236,7 @@ function NotificationIcon() {
     <div className="notification-container">
       <button 
         className="notification-icon" 
-        onClick={() => setShowDropdown(!showDropdown)}
+        onClick={handleDropdownToggle}
       >
         <IoNotifications />
         {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
@@ -158,6 +244,17 @@ function NotificationIcon() {
 
       {showDropdown && (
         <div className="notification-dropdown">
+          <div className="notification-header">
+            <h3>Notifications</h3>
+            {notifications.length > 0 && (
+              <button 
+                className="clear-notifications-btn"
+                onClick={clearNotifications}
+              >
+                Clear All
+              </button>
+            )}
+          </div>
           {notifications.length > 0 ? (
             notifications.map(notification => (
               <div 

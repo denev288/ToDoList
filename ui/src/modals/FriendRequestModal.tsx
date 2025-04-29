@@ -51,7 +51,6 @@ function FriendRequestModal({ isOpen, onClose }: FriendRequestModalProps) {
           headers: { Authorization: `Bearer ${accessToken}` }
         }
       );
-      console.log('Search response:', response.data);
       setSearchResults(response.data);
       setError("");
     } catch (err: any) {
@@ -87,14 +86,13 @@ function FriendRequestModal({ isOpen, onClose }: FriendRequestModalProps) {
     const accessToken = userFromStorage.token;
 
     try {
-      const response = await axios.post(
+      await axios.post(
         `${apiUrl}/friends/request`,
         { _id: targetUserId },
         {
           headers: { Authorization: `Bearer ${accessToken}` }
         }
       );
-      console.log('Send request response:', response.data);
       alert("Friend request sent successfully!");
     } catch (err: any) {
       if (err.response?.status === 401) {

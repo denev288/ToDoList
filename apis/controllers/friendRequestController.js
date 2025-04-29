@@ -68,13 +68,10 @@ const handleFriendRequest = async (req, res) => {
   const { requestId, action } = req.body;
 
   try {
-    console.log('Handling friend request:', { requestId, action });
-
     if (!requestId || !action) {
       return res.status(400).json({ message: "Request ID and action are required" });
     }
 
-    // Map frontend actions to model enum values
     const statusMap = {
       'accept': 'accepted',
       'reject': 'rejected'
@@ -85,9 +82,7 @@ const handleFriendRequest = async (req, res) => {
       return res.status(400).json({ message: "Invalid action" });
     }
 
-    const request = await FriendRequestModel.findById(requestId);
-    console.log('Found request:', request);
-
+    const request = await FriendRequestModel.findById(requestId).populate('from to', 'email');
     if (!request) {
       return res.status(404).json({ message: "Request not found" });
     }
@@ -99,21 +94,30 @@ const handleFriendRequest = async (req, res) => {
         }),
         UserModel.findByIdAndUpdate(request.from, {
           $push: { following: request.to }
+        }),
+        NotificationModel.create({
+          userId: request.from,
+          type: 'friend_request',
+          message: `${request.to.email} accepted your friend request`,
+          senderEmail: request.to.email,
         })
       ]);
+    } else {
+      await NotificationModel.create({
+        userId: request.from,
+        type: 'friend_request',
+        message: `${request.to.email} rejected your friend request`,
+        senderEmail: request.to.email,
+      });
     }
 
-    request.status = status; // Use mapped status value
+    request.status = status;
     await request.save();
 
     res.status(200).json({ message: `Friend request ${action}ed` });
   } catch (error) {
     console.error("Friend request error:", error);
-    res.status(500).json({ 
-      message: "Error handling friend request", 
-      error: error.message,
-      details: error.errors // Include validation errors in response
-    });
+    res.status(500).json({ message: "Error handling friend request", error: error.message });
   }
 };
 

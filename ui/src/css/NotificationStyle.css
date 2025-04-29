@@ -97,3 +97,30 @@
 .reject-btn:hover {
   background-color: #da190b;
 }
+
+.notification-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.notification-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #333;
+}
+
+.clear-notifications-btn {
+  background: none;
+  border: none;
+  color: #dc3545;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.clear-notifications-btn:hover {
+  text-decoration: underline;
+}
