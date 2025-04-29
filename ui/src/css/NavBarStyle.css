@@ -15,7 +15,14 @@ nav {
   padding: 10px 20px;
 }
 
-.navbar1, .navbar2 {
+.navbar1 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.navbar2 {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -31,6 +38,13 @@ nav {
 .welcome {
   margin-right: auto;
   font-weight: bold;
+}
+
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-left: auto;
 }
 
 .btn {

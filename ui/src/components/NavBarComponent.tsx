@@ -20,15 +20,22 @@ function NavBarComponent() {
       <nav>
         { user && (
         <div className="navbar1">
-          <span className="welcome">Welcome: {user.email}</span>         
-          <NotificationComponent />
-          <button 
-            onClick={() => setShowFriendModal(true)}
-            className="btn btn-outline-primary me-2"
-          >
-            Find Friends
-          </button>
-          <button onClick={handleClick} className="btn btn-outline-success me-2" type="button">Log Out</button>
+          <span className="welcome">Welcome: {user.email}</span>
+          <div className="navbar-actions">
+            <NotificationComponent />
+            <button 
+              onClick={() => setShowFriendModal(true)}
+              className="btn btn-outline-primary me-2"
+            >
+              Find Friends
+            </button>
+            <button 
+              onClick={handleClick} 
+              className="btn btn-outline-success me-2"
+            >
+              Log Out
+            </button>
+          </div>
         </div>
         )}
         {!user && (

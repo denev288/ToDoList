@@ -114,101 +114,7 @@ const searchUsers = async (req, res) => {
   }
 };
 
-// Send follow request
-const sendFollowRequest = async (req, res) => {
-  const targetUserId = req.body._id;
-  const currentUserId = req.user._id;
 
-  try {
-    // Check if request already exists
-    const existingRequest = await FriendRequestModel.findOne({
-      from: currentUserId,
-      to: targetUserId,
-      status: 'pending'
-    });
-
-    if (existingRequest) {
-      return res.status(400).json({ message: "Follow request already sent" });
-    }
-
-    // Create friend request
-    const friendRequest = await FriendRequestModel.create({
-      from: currentUserId,
-      to: targetUserId
-    });
-
-    // Create notification for target user
-    await NotificationModel.create({
-      userId: targetUserId,
-      type: 'friend_request',
-      message: `You have a new friend request`,
-      relatedId: friendRequest._id
-    });
-
-    res.status(200).json({ message: "Follow request sent successfully" });
-  } catch (error) {
-    res.status(500).json({ message: "Error sending follow request" });
-  }
-};
-
-// Handle follow request (accept/reject)
-const handleFollowRequest = async (req, res) => {
-  const { requestId, action } = req.body;
-  const currentUserId = req.user._id;
-
-  try {
-    const currentUser = await UserModel.findById(currentUserId);
-    if (!currentUser) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    const request = currentUser.friendRequests.id(requestId);
-    if (!request) {
-      return res.status(404).json({ message: "Request not found" });
-    }
-
-    if (action === 'accept') {
-      // Add to followers/following lists
-      const [targetUser] = await Promise.all([
-        UserModel.findById(request.from),
-        UserModel.findByIdAndUpdate(currentUserId, {
-          $push: { followers: request.from }
-        }),
-        UserModel.findByIdAndUpdate(request.from, {
-          $push: { following: currentUserId }
-        })
-      ]);
-
-      if (!targetUser) {
-        return res.status(404).json({ message: "Requesting user no longer exists" });
-      }
-
-      request.status = 'accepted';
-    } else if (action === 'reject') {
-      request.status = 'rejected';
-    }
-
-    await currentUser.save();
-    res.status(200).json({ message: `Follow request ${action}ed` });
-
-  } catch (error) {
-    res.status(500).json({ message: "Error handling follow request" });
-  }
-};
-
-// Get follow requests
-const getFollowRequests = async (req, res) => {
-  try {
-    const requests = await FriendRequestModel.find({ 
-      to: req.user._id,
-      status: 'pending'
-    }).populate('from', 'name email');
-    
-    res.status(200).json(requests);
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching follow requests" });
-  }
-};
 
 module.exports = {
   loginUser,
@@ -217,7 +123,5 @@ module.exports = {
   getNotifications,
   markNotificationsAsRead,
   searchUsers,
-  sendFollowRequest,
-  handleFollowRequest,
-  getFollowRequests
+
 };

@@ -28,6 +28,9 @@ const sendFriendRequest = async (req, res) => {
       return res.status(400).json({ message: "Friend request already sent" });
     }
 
+    // Get sender info
+    const sender = await UserModel.findById(currentUserId).select('name email');
+    
     const friendRequest = await FriendRequestModel.create({
       from: currentUserId,
       to: targetUserId
@@ -36,7 +39,8 @@ const sendFriendRequest = async (req, res) => {
     await NotificationModel.create({
       userId: targetUserId,
       type: 'friend_request',
-      message: `You have a new friend request`,
+      message: '',  // Leave empty since we'll use sender info
+      senderEmail: sender.email,  // Add sender email
       relatedId: friendRequest._id
     });
 

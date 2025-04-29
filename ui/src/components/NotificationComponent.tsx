@@ -10,7 +10,8 @@ interface Notification {
   message: string;
   read: boolean;
   createdAt: string;
-  relatedId?: string; // Add this for friend request reference
+  relatedId?: string;
+  senderEmail?: string;
 }
 
 function NotificationIcon() {
@@ -24,7 +25,7 @@ function NotificationIcon() {
       const response = await axios.get(`${apiUrl}/notifications`, {
         headers: { Authorization: `Bearer ${user?.token}` }
       });
-      setNotifications(response.data);
+      setNotifications(response.data);      
     } catch (error: any) {
       if (error.response?.status === 401) {
         try {
@@ -117,7 +118,7 @@ function NotificationIcon() {
     if (notification.type === 'friend_request' && notification.relatedId) {
       return (
         <>
-          <p>{notification.message}</p>
+          <p>You have a new friend request from: {notification.senderEmail}</p>
           <div className="friend-request-actions">
             <button 
               className="accept-btn"
