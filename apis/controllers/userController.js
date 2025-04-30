@@ -107,14 +107,42 @@ const searchUsers = async (req, res) => {
       return res.status(400).json({ message: "Email parameter required" });
     }
 
-    const users = await UserModel.find({ email: email }).select('name email');
-    res.status(200).json(users);
+    // Find target user
+    const targetUser = await UserModel.findOne({ email }).select('name email');
+    if (!targetUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Don't allow sending request to self
+    if (targetUser._id.toString() === req.user._id.toString()) {
+      return res.status(400).json({ message: "Cannot send friend request to yourself" });
+    }
+
+    // Check if they are already friends
+    const currentUser = await UserModel.findById(req.user._id);
+    if (currentUser.following.includes(targetUser._id) || currentUser.followers.includes(targetUser._id)) {
+      return res.status(400).json({ message: "You are already friends with this user" });
+    }
+
+    // Check for pending friend request
+    const existingRequest = await FriendRequestModel.findOne({
+      from: req.user._id,
+      to: targetUser._id,
+      status: 'pending'
+    });
+
+    if (existingRequest) {
+      return res.status(400).json({ message: "Friend request already pending" });
+    }
+
+    // If all checks pass, return the user
+    res.status(200).json([targetUser]);
+
   } catch (error) {
+    console.error("Search users error:", error);
     res.status(500).json({ message: "Error searching for users" });
   }
 };
-
-
 
 module.exports = {
   loginUser,
@@ -123,5 +151,4 @@ module.exports = {
   getNotifications,
   markNotificationsAsRead,
   searchUsers,
-
 };
