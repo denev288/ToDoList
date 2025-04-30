@@ -6,6 +6,11 @@ const UserSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
+  friendsList: [{
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'user' },
+    email: { type: String },
+    _id: false  // This prevents MongoDB from adding _id to each friend entry
+  }]
 });
 
 UserSchema.statics.login = async function (email, password) {

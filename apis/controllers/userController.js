@@ -1,86 +1,154 @@
 const UserModel = require("../models/UserModel");
 const jwt = require("jsonwebtoken");
+const NotificationModel = require("../models/NotificationModel");
+const FriendRequestModel = require("../models/FriendRequestModel");
 
 const createToken = (_id) => {
-    return jwt.sign({ _id }, process.env.SECRET, { expiresIn: "10s" }); // access token
+  return jwt.sign({ _id }, process.env.SECRET, { expiresIn: "15m" }); // access token
 };
 const createRefreshToken = (_id) => {
-    return jwt.sign({ _id }, process.env.RREFRESH_TOKEN_SECRET, { expiresIn: "3d" }); // refresh token
+  return jwt.sign({ _id }, process.env.RREFRESH_TOKEN_SECRET, {
+    expiresIn: "3d",
+  }); // refresh token
 };
 
 const refreshToken = async (req, res) => {
-    
-    try {
-        const refreshToken = req.body.refreshToken;
+  try {
+    const refreshToken = req.body.refreshToken;
 
-        if (!refreshToken) {
-            return res.status(401).json({ message: 'Refresh token not found' });
+    if (!refreshToken) {
+      return res.status(401).json({ message: "Refresh token not found" });
+    }
+
+    await jwt.verify(
+      refreshToken,
+      process.env.RREFRESH_TOKEN_SECRET,
+      async (err, decoded) => {
+        if (err) {
+          return res
+            .status(403)
+            .json({ message: "Invalid or expired refresh token" });
         }
 
-        await jwt.verify(refreshToken, process.env.RREFRESH_TOKEN_SECRET, async (err, decoded) => {
-            if (err) {
-                return res.status(403).json({ message: 'Invalid or expired refresh token' });
-            }
+        const user = await UserModel.findById(decoded._id);
+        if (!user) {
+          return res.status(404).json({ message: "User not found" });
+        }
+        const newAccessToken = createToken(user._id);
 
-            const user = await UserModel.findById(decoded._id);
-            if (!user) {
-                return res.status(404).json({ message: 'User not found' });
-            }
-            const newAccessToken = createToken(user._id);
-
-            res.status(200).json({ token: newAccessToken });
-        });
-    } catch (error) {
-        console.error(error)
-        res.status(500).json({  message: "refreshToken Method" });
-    }
+        res.status(200).json({ token: newAccessToken });
+      }
+    );
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "refreshToken Method" });
+  }
 };
 
 // Finds the user in the database and checks if the password is correct
 const loginUser = async (req, res) => {
-    const { email, password } = req.body;
+  const { email, password } = req.body;
 
-    try {
+  try {
+    const user = await UserModel.login(email, password);
+    const token = createToken(user._id);
+    const refreshToken = createRefreshToken(user._id);
 
-        const user = await UserModel.login(email, password);
-        const token = createToken(user._id);
-        const refreshToken = createRefreshToken(user._id)
-
-        res.status(200).json({email, token, refreshToken});
-    } catch(error){
-        res.status(400).json({message: error.message});
-    }
+    res.status(200).json({ email, token, refreshToken });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
 };
 
 const createRegistration = async (req, res) => {
-    const { name, email, password } = req.body;
-    try {
-        const user = await UserModel.signup(name, email, password);
-        const token = createToken(user._id);
-        res.status(200).json({email, token});
-    } catch(error){
-        res.status(400).json({message: error.message});
-    }
-  };
+  const { name, email, password } = req.body;
+  try {
+    const user = await UserModel.signup(name, email, password);
+    const token = createToken(user._id);
+    res.status(200).json({ email, token });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
 
 // Fetch notifications for the logged-in user
 async function getNotifications(req, res) {
   try {
-    const user = await UserModel.findById(req.user._id).select("notifications");
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    res.status(200).json(user.notifications);
+    const notifications = await NotificationModel.find({ 
+      userId: req.user._id 
+    }).sort({ createdAt: -1 });
+    
+    res.status(200).json(notifications);
   } catch (err) {
     console.error("Error fetching notifications:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 }
 
+// Mark notifications as read
+const markNotificationsAsRead = async (req, res) => {
+  try {
+    await NotificationModel.updateMany(
+      { userId: req.user._id, read: false },
+      { $set: { read: true } }
+    );
+
+    res.status(200).json({ message: "Notifications marked as read" });
+  } catch (error) {
+    res.status(500).json({ error: "Error marking notifications as read" });
+  }
+};
+
+// Search for users
+const searchUsers = async (req, res) => {
+  const { email } = req.body;
+  try {
+    if (!email) {
+      return res.status(400).json({ message: "Email parameter required" });
+    }
+
+    // Find target user
+    const targetUser = await UserModel.findOne({ email }).select('name email');
+    if (!targetUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Don't allow sending request to self
+    if (targetUser._id.toString() === req.user._id.toString()) {
+      return res.status(400).json({ message: "Cannot send friend request to yourself" });
+    }
+
+    // Check if they are already friends
+    const currentUser = await UserModel.findById(req.user._id);
+    if (currentUser.friendsList.includes(targetUser._id)) {
+      return res.status(400).json({ message: "You are already friends with this user" });
+    }
+
+    // Check for pending friend request
+    const existingRequest = await FriendRequestModel.findOne({
+      from: req.user._id,
+      to: targetUser._id,
+      status: 'pending'
+    });
+
+    if (existingRequest) {
+      return res.status(400).json({ message: "Friend request already pending" });
+    }
+
+    // If all checks pass, return the user
+    res.status(200).json([targetUser]);
+
+  } catch (error) {
+    console.error("Search users error:", error);
+    res.status(500).json({ message: "Error searching for users" });
+  }
+};
+
 module.exports = {
-    loginUser,
-    createRegistration, 
-    refreshToken,
-    getNotifications
+  loginUser,
+  createRegistration,
+  refreshToken,
+  getNotifications,
+  markNotificationsAsRead,
+  searchUsers,
 };
