@@ -28,6 +28,16 @@ const sendFriendRequest = async (req, res) => {
       return res.status(400).json({ message: "Friend request already sent" });
     }
 
+    // Check if already friends
+    const currentUser = await UserModel.findById(currentUserId);
+    const isAlreadyFriend = currentUser.friendsList.some(friend => 
+      friend.userId.toString() === targetUserId
+    );
+
+    if (isAlreadyFriend) {
+      return res.status(400).json({ message: "Users are already friends" });
+    }
+
     // Get sender info
     const sender = await UserModel.findById(currentUserId).select('name email');
     
@@ -88,12 +98,28 @@ const handleFriendRequest = async (req, res) => {
     }
 
     if (action === 'accept') {
+      const [fromUser, toUser] = await Promise.all([
+        UserModel.findById(request.from),
+        UserModel.findById(request.to)
+      ]);
+
       await Promise.all([
+        // Add each user to other's friendsList
         UserModel.findByIdAndUpdate(request.to, {
-          $push: { followers: request.from }
+          $push: { 
+            friendsList: {
+              userId: request.from,
+              email: fromUser.email
+            }
+          }
         }),
         UserModel.findByIdAndUpdate(request.from, {
-          $push: { following: request.to }
+          $push: { 
+            friendsList: {
+              userId: request.to,
+              email: toUser.email
+            }
+          }
         }),
         NotificationModel.create({
           userId: request.from,

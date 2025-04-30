@@ -120,7 +120,7 @@ const searchUsers = async (req, res) => {
 
     // Check if they are already friends
     const currentUser = await UserModel.findById(req.user._id);
-    if (currentUser.following.includes(targetUser._id) || currentUser.followers.includes(targetUser._id)) {
+    if (currentUser.friendsList.includes(targetUser._id)) {
       return res.status(400).json({ message: "You are already friends with this user" });
     }
 
