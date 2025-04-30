@@ -13,10 +13,10 @@ router.post('/refresh', refreshToken);
 
 // Protected routes
 router.use(requireAuth);
-router.post('/search', searchUsers);  // Changed from GET to POST
+router.post('/search', searchUsers); 
 router.get('/notifications', getNotifications);
 router.post('/notifications/read', markNotificationsAsRead);
-router.delete('/notifications/clear', clearNotifications);  // Add this line
+router.delete('/notifications/clear', clearNotifications);
 router.post('/friends/request', sendFriendRequest);
 router.get('/friends/requests', getPendingRequests);
 router.post('/friends/handle', handleFriendRequest);
