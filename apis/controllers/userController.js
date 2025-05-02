@@ -4,12 +4,10 @@ const NotificationModel = require("../models/NotificationModel");
 const FriendRequestModel = require("../models/FriendRequestModel");
 
 const createToken = (_id) => {
-  return jwt.sign({ _id }, process.env.SECRET, { expiresIn: "15m" }); // access token
+  return jwt.sign({ _id }, process.env.SECRET, { expiresIn: "10s" }); // access token
 };
 const createRefreshToken = (_id) => {
-  return jwt.sign({ _id }, process.env.RREFRESH_TOKEN_SECRET, {
-    expiresIn: "3d",
-  }); // refresh token
+  return jwt.sign({ _id }, process.env.RREFRESH_TOKEN_SECRET, { expiresIn: "3d" }); // refresh token
 };
 
 const refreshToken = async (req, res) => {
@@ -144,6 +142,21 @@ const searchUsers = async (req, res) => {
   }
 };
 
+const getCurrentUser = async (req, res) => {
+  try {
+    const user = await UserModel.findById(req.user._id)
+      .select('name email friendsList');
+    
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching user details" });
+  }
+};
+
 module.exports = {
   loginUser,
   createRegistration,
@@ -151,4 +164,5 @@ module.exports = {
   getNotifications,
   markNotificationsAsRead,
   searchUsers,
+  getCurrentUser,
 };

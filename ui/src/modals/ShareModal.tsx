@@ -1,5 +1,11 @@
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import "../css/ShareModalStyle.css";
+import axios from "axios";
+
+interface Friend {
+  userId: string;
+  email: string;
+}
 
 interface ShareModalProps {
   isOpen: boolean;
@@ -12,10 +18,73 @@ interface ShareModalProps {
 function ShareModal({ isOpen, onClose, onSubmit, error, currentUserEmail }: ShareModalProps) {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const apiUrl = import.meta.env.VITE_APIURL;
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchUserDetails();
+    }
+  }, [isOpen, apiUrl]);
+
+  function refreshAccessToken() {
+    const userFromStorage = JSON.parse(localStorage.getItem('user') || '{}');
+    const refreshToken = userFromStorage.refreshToken;
+
+    if (!refreshToken) {
+      console.error("Refresh token is missing");
+      return Promise.reject("Refresh token is missing");
+    }
+
+    return axios
+      .post(`${apiUrl}/refresh`, { refreshToken })
+      .then((res) => {
+        const newAccessToken = res.data.token;
+        userFromStorage.token = newAccessToken;
+        localStorage.setItem('user', JSON.stringify(userFromStorage));
+        return newAccessToken;
+      })
+      .catch((err) => {
+        console.error("Failed to refresh token", err);
+        throw err;
+      });
+  }
+
+  async function fetchUserDetails() {
+    const userFromStorage = JSON.parse(localStorage.getItem('user') || '{}');
+    const accessToken = userFromStorage.token;
+
+    try {
+      const response = await axios.get(`${apiUrl}/user`, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      
+      if (response.data.friendsList) {
+        setFriends(response.data.friendsList);
+      }
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        try {
+          const newToken = await refreshAccessToken();
+          const response = await axios.get(`${apiUrl}/user`, {
+            headers: { Authorization: `Bearer ${newToken}` }
+          });
+          
+          if (response.data.friendsList) {
+            setFriends(response.data.friendsList);
+          }
+        } catch (refreshErr) {
+          console.error('Error fetching user details after token refresh:', refreshErr);
+        }
+      } else {
+        console.error('Error fetching user details:', err);
+      }
+    }
+  }
 
   function handleSubmit() {
     if (!email.trim()) {
-      alert("Email is required");
+      alert("Please select a friend to share with");
       return;
     }
     
@@ -34,12 +103,20 @@ function ShareModal({ isOpen, onClose, onSubmit, error, currentUserEmail }: Shar
       <div className="modal-content">
         <h2>Share Task</h2>
         {error && <div className="error-message">{error}</div>}
-        <input
-          type="email"
-          placeholder="Recipient's Email"
+        
+        <select 
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-        />
+          className="friend-select"
+        >
+          <option value="" disabled>Select a friend</option>
+          {friends.map((friend) => (
+            <option key={friend.userId} value={friend.email}>
+              {friend.email}
+            </option>
+          ))}
+        </select>
+
         <textarea
           placeholder="Message (optional)"
           value={message}

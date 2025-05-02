@@ -21,6 +21,10 @@ const TodoSchema = new mongoose.Schema({
     type: String, 
     default: null, // Null if the task is owned by the user
   },
+  sharedWith: {
+    type: String,
+    default: null,
+  }
 }, {
   timestamps: true,
 });

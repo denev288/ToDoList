@@ -1,5 +1,5 @@
 const express = require('express');
-const { loginUser, createRegistration, refreshToken, searchUsers } = require('../controllers/userController');
+const { loginUser, createRegistration, refreshToken, searchUsers, getCurrentUser } = require('../controllers/userController');
 const { getNotifications, markNotificationsAsRead, clearNotifications } = require('../controllers/notificationController');
 const { sendFriendRequest, getPendingRequests, handleFriendRequest } = require('../controllers/friendRequestController');
 const requireAuth = require("../middleware/requireAuth");
@@ -20,5 +20,6 @@ router.delete('/notifications/clear', clearNotifications);
 router.post('/friends/request', sendFriendRequest);
 router.get('/friends/requests', getPendingRequests);
 router.post('/friends/handle', handleFriendRequest);
+router.get('/user', getCurrentUser);
 
 module.exports = router;
