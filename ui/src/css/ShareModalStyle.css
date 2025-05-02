@@ -46,3 +46,17 @@
   margin: 10px 0;
   font-size: 14px;
 }
+
+.friend-select {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.friend-select:focus {
+  outline: none;
+  border-color: #666;
+}

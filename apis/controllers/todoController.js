@@ -1,4 +1,5 @@
 const TodoModel = require("../models/Todo");
+const { syncTaskCompletion } = require("./taskController");
 
 // Controller to fetch all tasks
 const getAllTasks = async (req, res) => {
@@ -59,6 +60,8 @@ const updateTaskCompletion = async (req, res) => {
       { new: true }
     );
     if (updatedTask) {
+      // Sync completion status across shared tasks
+      await syncTaskCompletion(id, completed, req.user.email);
       res.json(updatedTask);
     } else {
       res.status(404).json({ error: "Task not found" });

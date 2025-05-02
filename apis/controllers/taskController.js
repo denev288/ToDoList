@@ -48,9 +48,14 @@ async function shareTask(req, res) {
       description: task.description,
       completed: false,
       user_id: recipient._id,
-      sharedBy: sender.email, // Set the sender's email here
+      sharedBy: sender.email,
+      sharedWith: recipient.email,
+      originalTaskId: task._id
     });
 
+    // Update original task with recipient info
+    task.sharedWith = recipient.email;
+    await task.save();
     await sharedTask.save();
 
     res.status(200).json({ message: "Task shared successfully" });
@@ -60,6 +65,33 @@ async function shareTask(req, res) {
   }
 }
 
+// handle task completion sync
+async function syncTaskCompletion(taskId, completed, completedBy) {
+  try {
+    const task = await Todo.findById(taskId);
+    if (!task) return;
+
+    // If this is a shared task, update the original
+    if (task.originalTaskId) {
+      const originalTask = await Todo.findById(task.originalTaskId);
+      if (originalTask) {
+        originalTask.completed = completed;
+        await originalTask.save();
+      }
+    }
+
+    // If this is an original task, update all shared copies
+    const sharedTasks = await Todo.find({ originalTaskId: taskId });
+    for (const sharedTask of sharedTasks) {
+      sharedTask.completed = completed;
+      await sharedTask.save();
+    }
+  } catch (err) {
+    console.error('Error syncing task completion:', err);
+  }
+}
+
 module.exports = {
   shareTask,
+  syncTaskCompletion
 };
