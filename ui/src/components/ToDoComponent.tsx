@@ -288,6 +288,7 @@ function ToDoComponent() {
       )
       .then(() => {
         alert("Task shared successfully");
+        fetchTasks(); // Add this line to refresh tasks
         handleCloseShareModal();
       })
       .catch((err) => {
@@ -302,6 +303,7 @@ function ToDoComponent() {
             })
             .then(() => {
               alert("Task shared successfully");
+              fetchTasks(); // Add this line here too
               handleCloseShareModal();
             })
             .catch((refreshErr) => {
