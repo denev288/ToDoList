@@ -14,6 +14,8 @@ interface Task {
   completed: boolean;
   showDescription?: boolean;
   sharedBy?: string; // Add sharedBy field to indicate if the task is shared
+  sharedWith?: string;
+  originalTaskId?: string;
 }
 
 function ToDoComponent() {
@@ -427,6 +429,16 @@ function ToDoComponent() {
     setTasks(updatedTasks);
   }
 
+  function getTaskStatusText(task: Task) {
+    if (task.sharedBy) {
+      return `📥 Shared by: ${task.sharedBy}${task.completed ? ` (Completed)` : ''}`;
+    }
+    if (task.sharedWith) {
+      return `📤 Shared with: ${task.sharedWith}${task.completed ? ` (Completed)` : ''}`;
+    }
+    return '👤 Own task';
+  }
+
   return (
     <>
       <div className="add-task">
@@ -508,7 +520,7 @@ function ToDoComponent() {
                     </div>
                     
                     <p className="task-shared-status">
-                      {task.sharedBy ? `📤 Shared by: ${task.sharedBy}` : '👤 Own task'}
+                      {getTaskStatusText(task)}
                     </p>
 
                     {task.description ? (
@@ -560,7 +572,7 @@ function ToDoComponent() {
                     </div>
                     
                     <p className="task-shared-status">
-                      {task.sharedBy ? `📤 Shared by: ${task.sharedBy}` : '👤 Own task'}
+                      {getTaskStatusText(task)}
                     </p>
 
                     {task.description ? (

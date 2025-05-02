@@ -24,6 +24,11 @@ const TodoSchema = new mongoose.Schema({
   sharedWith: {
     type: String,
     default: null,
+  },
+  originalTaskId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Todo',
+    default: null
   }
 }, {
   timestamps: true,
