@@ -13,7 +13,7 @@ interface Task {
   description: string; 
   completed: boolean;
   showDescription?: boolean;
-  sharedBy?: string; // Add sharedBy field to indicate if the task is shared
+  sharedBy?: string;
   sharedWith?: string;
   originalTaskId?: string;
 }
