@@ -56,6 +56,40 @@ function FriendsListModal({ isOpen, onClose }: FriendsListModalProps) {
     }
   }
 
+  async function unfollowFriend(friendId: string) {
+    const userFromStorage = JSON.parse(localStorage.getItem('user') || '{}');
+    try {
+ 
+      await axios.delete(`${apiUrl}/friends/${friendId}`, {
+        headers: { Authorization: `Bearer ${userFromStorage.token}` }
+      });
+      setFriends(friends.filter(friend => friend.userId !== friendId));
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        try {
+          const refreshResponse = await axios.post(`${apiUrl}/refresh`, {
+            refreshToken: userFromStorage.refreshToken
+          });          
+
+          await axios.delete(`${apiUrl}/friends/${friendId}`, {
+            headers: { Authorization: `Bearer ${refreshResponse.data.token}` }
+          });
+          
+          const updatedUser = {
+            ...userFromStorage,
+            token: refreshResponse.data.token
+          };
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+          setFriends(friends.filter(friend => friend.userId !== friendId));
+        } catch (refreshErr) {
+          setError("Session expired. Please login again.");
+        }
+      } else {
+        setError(err.response?.data?.message || "Failed to unfollow friend");
+      }
+    }
+  }
+
   if (!isOpen) return null;
 
   return (
@@ -68,8 +102,10 @@ function FriendsListModal({ isOpen, onClose }: FriendsListModalProps) {
             friends.map((friend) => (
               <div key={friend.userId} className="friend-item">
                 <span className="friend-email">{friend.email}</span>
+                <button className="unfollow" onClick={() => unfollowFriend(friend.userId)}>Unfollow</button>
               </div>
-            ))
+              
+            ))            
           ) : (
             <p className="no-friends">No friends added yet</p>
           )}

@@ -26,7 +26,7 @@
 .close-button {
   width: 100%;
   padding: 10px;
-  background-color: #f44336;
+  background-color: gray;
   color: white;
   border: none;
   border-radius: 4px;
@@ -34,7 +34,7 @@
 }
 
 .close-button:hover {
-  background-color: #d32f2f;
+  background-color: #4d4a4a;
 }
 
 .error-message {
@@ -43,4 +43,18 @@
   padding: 10px;
   background-color: #ffebee;
   border-radius: 4px;
+}
+
+.unfollow {
+  background-color: #ee6a60;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 3px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.unfollow:hover {
+  background-color: #a51b11;;
 }
