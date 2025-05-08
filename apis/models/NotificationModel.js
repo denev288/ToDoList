@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const NotificationSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'user', required: true },
-  type: { type: String, enum: ['task', 'friend_request'], required: true },
+  type: { type: String, enum: ['task', 'friend_request', 'email_update'], required: true },
   message: { type: String },  // Removed required
   read: { type: Boolean, default: false },
   relatedId: mongoose.Schema.Types.ObjectId,

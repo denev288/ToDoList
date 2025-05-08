@@ -1,7 +1,9 @@
 const UserModel = require("../models/UserModel");
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");  // Add this import
 const NotificationModel = require("../models/NotificationModel");
 const FriendRequestModel = require("../models/FriendRequestModel");
+const validator = require("validator");
 
 const createToken = (_id) => {
   return jwt.sign({ _id }, process.env.SECRET, { expiresIn: "10s" }); // access token
@@ -157,6 +159,84 @@ const getCurrentUser = async (req, res) => {
   }
 };
 
+const updateUser = async (req, res) => {
+  const { name, email, password } = req.body;
+  const userId = req.user._id;
+
+  try {
+    const updates = {};
+    if (name) updates.name = name;
+    if (email) updates.email = email;
+    
+    // Password handling
+    if (password && password.trim() !== '') {
+      if (!validator.isStrongPassword(password)) {
+        return res.status(400).json({ message: "Password not strong enough" });
+      }
+      const salt = await bcrypt.genSalt(10);
+      updates.password = await bcrypt.hash(password, salt);
+    }
+
+    // Check email uniqueness
+    if (email) {
+      const existingUser = await UserModel.findOne({ email, _id: { $ne: userId } });
+      if (existingUser) {
+        return res.status(400).json({ message: "Email already in use" });
+      }
+    }
+
+    const user = await UserModel.findById(userId);
+    const oldEmail = user.email;
+
+    // Update user
+    const updatedUser = await UserModel.findByIdAndUpdate(
+      userId,
+      updates,
+      { new: true }
+    ).select('name email');
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // If email changed, update all friends' friendsList
+    if (email && email !== oldEmail) {
+      // Find all users who have this user as friend
+      const usersToUpdate = await UserModel.find({
+        'friendsList.userId': userId
+      });
+
+      // Update friend email in their lists and notify them
+      const updatePromises = usersToUpdate.map(async (friendUser) => {
+        // Update friend's list
+        await UserModel.updateOne(
+          { 
+            _id: friendUser._id,
+            'friendsList.userId': userId 
+          },
+          { 
+            $set: { 'friendsList.$.email': email }
+          }
+        );
+
+        // Create notification for the friend
+        await NotificationModel.create({
+          userId: friendUser._id,
+          type: 'email_update',
+          message: `${oldEmail} has changed their email to ${email}`,
+          read: false
+        });
+      });
+
+      await Promise.all(updatePromises);
+    }
+
+    res.status(200).json(updatedUser);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 module.exports = {
   loginUser,
   createRegistration,
@@ -165,4 +245,5 @@ module.exports = {
   markNotificationsAsRead,
   searchUsers,
   getCurrentUser,
+  updateUser,
 };

@@ -147,8 +147,41 @@ const handleFriendRequest = async (req, res) => {
   }
 };
 
+const unfollowFriend = async (req, res) => {
+  const friendId = req.params.friendId;
+  const userId = req.user._id;
+
+  try {
+    // Remove friend from current user's friendsList
+    await UserModel.findByIdAndUpdate(userId, {
+      $pull: { friendsList: { userId: friendId } }
+    });
+
+    // Remove current user from friend's friendsList
+    await UserModel.findByIdAndUpdate(friendId, {
+      $pull: { friendsList: { userId: userId } }
+    });
+
+    console.log(friendId, userId);
+
+    // Delete any friend requests between the users
+    await FriendRequestModel.deleteMany({
+      $or: [
+        { from: userId, to: friendId },
+        { from: friendId, to: userId }
+      ]
+    });
+
+    res.status(200).json({ message: "Friend removed successfully" });
+  } catch (error) {
+    console.error("Error unfollowing friend:", error);
+    res.status(500).json({ message: "Error removing friend" });
+  }
+};
+
 module.exports = {
   sendFriendRequest,
   getPendingRequests,
-  handleFriendRequest
+  handleFriendRequest,
+  unfollowFriend
 };
