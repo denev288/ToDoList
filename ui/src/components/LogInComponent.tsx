@@ -9,7 +9,7 @@ function LogInComponent() {
   const [email, setEmail] = useState("");
   const navigate = useNavigate();
  
-  const apiUrl = import.meta.env.VITE_APIURL;
+  const apiUrl = process.env.VITE_APIURL;
 
   const { dispatch } = useAuthContext();
 
@@ -44,10 +44,11 @@ function LogInComponent() {
         <h2>Login</h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-3">
-            <label htmlFor="email">
+            <label htmlFor="email-input">
               <strong>Email</strong>
             </label>
             <input
+              id="email-input"
               type="text"
               placeholder="Enter Email"
               autoComplete="off"
@@ -57,11 +58,12 @@ function LogInComponent() {
               onChange={(e) => setEmail(e.target.value)}
             />
             <div className="mb-3">
-              <label htmlFor="email">
+              <label htmlFor="password-input">
                 <strong>Password</strong>
               </label>
               <input
-                type="text"
+                id="password-input"
+                type="password"
                 placeholder="Enter Password"
                 autoComplete="off"
                 name="password"
