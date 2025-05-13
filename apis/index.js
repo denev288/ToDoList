@@ -21,9 +21,15 @@ mongoose.connect(MONDODB_URL, {
 const app = express();
 
 const corsOptions = {
-  origin: ["http://localhost:5173", "http://localhost.second:5173"],
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  origin: [
+    "http://localhost:5173", 
+    "http://localhost.second:5173",
+    "https://681c9ab36e9225a2c9bcbff6--cozy-donut-e6055e.netlify.app",
+    "https://cozy-donut-e6055e.netlify.app"
+
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "Accept"],
   credentials: true,
 };
 app.use(cookieParser());
