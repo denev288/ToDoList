@@ -1,7 +1,8 @@
 import axios from "axios";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import  useAuthContext  from "../hooks/useAuthContext";
+import useAuthContext from "../hooks/useAuthContext";
+import { VITE_APIURL } from '../config';
 
 function LogInComponent() {
   const [errorMessage, setErrorMessage] = useState("");
@@ -9,7 +10,7 @@ function LogInComponent() {
   const [email, setEmail] = useState("");
   const navigate = useNavigate();
  
-  const apiUrl = process.env.VITE_APIURL;
+  const apiUrl = VITE_APIURL;
 
   const { dispatch } = useAuthContext();
 

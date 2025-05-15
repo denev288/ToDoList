@@ -89,11 +89,18 @@ button {
 .edit-button, .save-button {
   background-color: transparent;
   color: blue;
+  text-decoration: transparent ;
 }
 
 .edit-button:hover, .save-button:hover {
   background-color: transparent;
   color: rgb(1, 1, 145);
+}
+
+.edit-button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 input[type="text"] {
@@ -362,4 +369,8 @@ li {
   text-align: left;
   margin: 0px 0 0px 0px;
   font-style: italic;
+}
+
+.btn-text{
+  color: transparent;
 }

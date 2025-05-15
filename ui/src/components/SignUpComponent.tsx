@@ -4,6 +4,7 @@ import axios from "axios";
 import { useState } from "react";
 import  useAuthContext  from "../hooks/useAuthContext";
 import { Link, useNavigate } from "react-router-dom";
+import { VITE_APIURL } from "../config";
 
 function SignUpComponent() {
   const [name, setName] = useState("");
@@ -13,7 +14,7 @@ function SignUpComponent() {
   const [errorMessage, setErrorMessage] = useState("");
   const { dispatch } = useAuthContext();
 
-  const apiUrl = import.meta.env.VITE_APIURL;
+  const apiUrl = VITE_APIURL;
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

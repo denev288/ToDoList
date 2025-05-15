@@ -3,6 +3,7 @@ import { IoNotifications } from "react-icons/io5";
 import axios from 'axios';
 import useAuthContext from '../hooks/useAuthContext';
 import '../css/NotificationStyle.css';
+import { VITE_APIURL } from '../config';
 
 interface Notification {
   _id: string;
@@ -18,7 +19,8 @@ function NotificationIcon() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const { user } = useAuthContext();
-  const apiUrl = import.meta.env.VITE_APIURL;
+  
+  const apiUrl = VITE_APIURL;
 
   function refreshAccessToken() {
     const userFromStorage = JSON.parse(localStorage.getItem('user') || '{}');

@@ -2,6 +2,7 @@ import { useState } from "react";
 import axios from "axios";
 import useAuthContext from "../hooks/useAuthContext";
 import "../css/EditUserModalStyle.css";
+import { VITE_APIURL } from "../config";
 
 interface EditUserModalProps {
   isOpen: boolean;
@@ -18,7 +19,8 @@ function EditUserModal({ isOpen, onClose, currentUser }: EditUserModalProps) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const { dispatch } = useAuthContext();
-  const apiUrl = import.meta.env.VITE_APIURL;
+
+  const apiUrl = VITE_APIURL;
 
   if (!isOpen) return null;
 
