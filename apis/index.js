@@ -9,11 +9,10 @@ const cookieParser = require('cookie-parser');
 
 dotenv.config();
 
-
-MONDODB_URL = process.env.MONDODB_URL;
+MONGODB_URL = process.env.MONGODB_URL;
 Mongo_url = "mongodb://localhost:27017/todo"
 
-mongoose.connect(MONDODB_URL, {
+mongoose.connect(MONGODB_URL, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });

@@ -84,7 +84,7 @@ function TaskModal({
               Cancel
             </button>
             <button type="submit" className="add-button">
-              Submit
+              {title ? 'Edit' : 'Add'} 
             </button>
           </div>
         </form>

@@ -461,8 +461,12 @@ function ToDoComponent() {
   return (
     <>
       <div className="add-task">
-        <button className="add-task-button" onClick={handleOpenModal}>
-          Add New Task
+        <button 
+          className="add-task-button" 
+          onClick={handleOpenModal}
+          aria-label="create new task" 
+        >
+          Create New Task
         </button>
       </div>
 
@@ -502,72 +506,76 @@ function ToDoComponent() {
             tasks
               .filter((task) => !task.completed)
               .map((task) => (
-                <li key={task._id}>
-                  <div className="task-header">
-                    <div className="task-checkbox-title">
-                      <input
-                        type="checkbox"
-                        checked={task.completed}
-                        onChange={() => taskCompleted(task._id)}
-                      />
-                      <span
-                        className={`text ${
-                          task.completed ? "completed-task" : ""
-                        }`}
-                      >
-                        {task.text}
-                      </span>
+                <div key={task._id}>
+                  <li>
+                    <div className="task-header">
+                      <div className="task-checkbox-title">
+                        <input
+                        data-testid="complete-button"
+                          type="checkbox"
+                          checked={task.completed}
+                          onChange={() => taskCompleted(task._id)}
+                        />
+                        <span
+                          className={`text ${
+                            task.completed ? "completed-task" : ""
+                          }`}
+                        >
+                          {task.text}
+                        </span>
+                      </div>
+                      <div className="task-actions">
+                        <button
+                          data-testid="share-button"
+                          className="edit-button"
+                          onClick={() => handleOpenShareModal(task._id)}
+                        >
+                          <CiShare2 />
+                        </button>
+                        <button
+                        data-testid="edit-button"
+                          className="edit-button"
+                          onClick={() => handleOpenEditModal(task._id)}
+                        >
+                          <CiEdit />
+                        </button>
+                        <button
+                          data-testid="delete-button"
+                          className="delete-button"
+                          onClick={() => deleteTask(task._id)}
+                        >
+                          <FaRegTrashAlt />
+                        </button>
+                      </div>
                     </div>
-                    <div className="task-actions">
-                      <button
-                        data-testid="share-button"
-                        className="edit-button"
-                        onClick={() => handleOpenShareModal(task._id)}
-                      >
-                        <CiShare2 />
-                      </button>
-                      <button
-                        className="edit-button"
-                        onClick={() => handleOpenEditModal(task._id)}
-                      >
-                        <CiEdit />
-                      </button>
-                      <button
-                        data-testid="delete-button"
-                        className="delete-button"
-                        onClick={() => deleteTask(task._id)}
-                      >
-                        <FaRegTrashAlt />
-                      </button>
-                    </div>
-                  </div>
 
-                  <p className="task-shared-status">
-                    {getTaskStatusText(task)}
-                  </p>
-
-                  {task.description ? (
-                    <div className="task-description">
-                      <button
-                        className="toggle-description"
-                        onClick={() => toggleDescription(task._id)}
-                      >
-                        {task.showDescription
-                          ? "Hide Description"
-                          : "Show Description"}
-                      </button>
-                      {task.showDescription && (
-                        <div className="description-content">
-                          {task.description}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="description-missing">
-                      Description is missing
+                    <p className="task-shared-status">
+                      {getTaskStatusText(task)}
                     </p>
-                  )}
-                </li>
+
+                    {task.description ? (
+                      <div className="task-description">
+                        <button
+                          className="toggle-description"
+                          onClick={() => toggleDescription(task._id)}
+                        >
+                          {task.showDescription
+                            ? "Hide Description"
+                            : "Show Description"}
+                        </button>
+                        {task.showDescription && (
+                          <div className="description-content">
+                            {task.description}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="description-missing">
+                        Description is missing
+                      </p>
+                    )}
+                  </li>
+                </div>
               ))
           ) : (
             <p>No current tasks</p>
