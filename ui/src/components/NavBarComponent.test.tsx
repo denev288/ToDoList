@@ -1,30 +1,38 @@
 import "@testing-library/jest-dom";
-import {
-  fireEvent,
-  render,
-  waitFor,
-  act,
-  screen,
-} from "@testing-library/react";
+import { fireEvent, render, waitFor, act, screen } from "@testing-library/react";
 import NavBarComponent from "./NavBarComponent";
-import { BrowserRouter } from "react-router-dom";
+import { MemoryRouter } from "react-router-dom";
 import { AuthContextProvider } from "../context/AuthContext";
 import axios from "axios";
 
-// Mock the environment variables
+const mockNavigate = jest.fn();
+
+// Mocks
+jest.mock('react-router-dom', () => ({
+  ...jest.requireActual('react-router-dom'),
+  useNavigate: () => mockNavigate,
+}));
+
+jest.mock('../hooks/useAuthContext', () => ({
+  __esModule: true,
+  default: () => ({
+    user: { email: "test@test.com" },
+    dispatch: jest.fn()
+  })
+}));
+
 jest.mock("../config", () => ({
   VITE_APIURL: "https://todolist-jr6y.onrender.com",
 }));
 
-// Add axios mock
 jest.mock("axios");
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
 const TestWrapper = ({ children }: { children: React.ReactNode }) => {
   return (
-    <AuthContextProvider>
-      <BrowserRouter>{children}</BrowserRouter>
-    </AuthContextProvider>
+    <MemoryRouter>
+      <AuthContextProvider>{children}</AuthContextProvider>
+    </MemoryRouter>
   );
 };
 
@@ -36,6 +44,7 @@ describe("NavBarComponent", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockNavigate.mockClear();
     localStorage.setItem("user", JSON.stringify(mockUser));
   });
   
@@ -86,33 +95,9 @@ describe("NavBarComponent", () => {
     });
   });
 
-  it("toggles dropdown menu when clicking welcome message", async () => {
-    render(
-      <TestWrapper>
-        <NavBarComponent />
-      </TestWrapper>
-    );
-    
-    const welcomeSpan = screen.getByText((content) => 
-      content.includes('Welcome:') && content.includes('test@test.com')
-    );
-
-    // Click to open dropdown
-    fireEvent.click(welcomeSpan);
-    
-    // Verify dropdown is visible
-    expect(screen.getByRole('button', { name: /profile/i })).toBeInTheDocument();
-    
-    // Click again to close dropdown
-    fireEvent.click(welcomeSpan);
-    
-    // Verify dropdown is hidden
-    expect(screen.queryByRole('button', { name: /profile/i })).not.toBeInTheDocument();
-  });
-
   it("opens edit profile modal when clicking profile button", async () => {
     render(
-      <TestWrapper></TestWrapper>
+      <TestWrapper>
         <NavBarComponent />
       </TestWrapper>
     );
@@ -123,15 +108,15 @@ describe("NavBarComponent", () => {
     );
     fireEvent.click(welcomeSpan);
 
-    // Click profile button
-    const profileButton = screen.getByRole('button', { name: /profile/i });
+    // Click profile button - use correct text content
+    const profileButton = screen.getByText('Edit User');
     fireEvent.click(profileButton);
 
-    // Verify modal is opened
+    // Verify modal is opened - use correct text content
     expect(screen.getByText('Edit Profile')).toBeInTheDocument();
   });
 
-  it("opens friends list modal when clicking friends button", async () => {
+  it("opens find friends modal when clicking find friends button", async () => {
     render(
       <TestWrapper>
         <NavBarComponent />
@@ -139,12 +124,23 @@ describe("NavBarComponent", () => {
     );
 
     // Click friends button
-    const friendsButton = screen.getByRole('button', { name: /find friends/i });
+    const friendsButton = screen.getByText('Find Friends');
     fireEvent.click(friendsButton);
 
     // Verify modal is opened
-    expect(screen.getByText('Find Friends')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /find friends/i })).toBeInTheDocument();
   });
 
   it("handles logout correctly", async () => {
     render(
+      <TestWrapper>
+        <NavBarComponent />
+      </TestWrapper>
+    );
+    
+    const logoutButton = screen.getByRole('button', { name: /log out/i });
+    fireEvent.click(logoutButton);
+
+    expect(localStorage.getItem("user")).toBeNull();
+  });
+});

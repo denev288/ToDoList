@@ -206,15 +206,17 @@ function NotificationIcon() {
     if (notification.type === 'friend_request' && notification.relatedId) {
       return (
         <>
-          <p>You have a new friend request from: {notification.senderEmail}</p>
+          <p data-testid="friend-request-message">You have a new friend request from: {notification.senderEmail}</p>
           <div className="friend-request-actions">
             <button 
+              data-testid="accept-request"
               className="accept-btn"
               onClick={() => handleFriendRequest(notification._id, notification.relatedId!, 'accept')}
             >
               Accept
             </button>
             <button 
+              data-testid="reject-request"
               className="reject-btn"
               onClick={() => handleFriendRequest(notification._id, notification.relatedId!, 'reject')}
             >
@@ -228,7 +230,7 @@ function NotificationIcon() {
     
     return (
       <>
-        <p>{notification.message}</p>
+        <p data-testid="task-notification-message">{notification.message}</p>
         <small>{new Date(notification.createdAt).toLocaleString()}</small>
       </>
     );
@@ -237,7 +239,9 @@ function NotificationIcon() {
   return (
     <div className="notification-container">
       <button 
-        className="notification-icon" 
+        className="notification-icon"
+        data-testid="notification-button"
+        aria-label="Toggle notifications" 
         onClick={handleDropdownToggle}
       >
         <IoNotifications />
