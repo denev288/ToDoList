@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom";
-import { fireEvent, render, waitFor, act } from "@testing-library/react";
+import { fireEvent, render, waitFor, act, screen } from "@testing-library/react";
 import ToDoComponent from "./ToDoComponent";
 import { BrowserRouter } from "react-router-dom";
 import { AuthContextProvider } from "../context/AuthContext";
@@ -37,9 +37,20 @@ jest.mock("../hooks/useAuthContext", () => ({
   }),
 }));
 
+const originalConsoleError = console.error;
+beforeAll(() => {
+  console.error = jest.fn() as jest.MockedFunction<typeof console.error>;
+});
+
+afterAll(() => {
+  console.error = originalConsoleError;
+});
+
 beforeEach(() => {
-  window.alert = jest.fn();
   jest.clearAllMocks();
+  (console.error as jest.MockedFunction<typeof console.error>).mockClear();
+  localStorage.setItem("user", JSON.stringify(mockUser));
+  window.alert = jest.fn();
 });
 
 // Helper function to render with act and wait for effects
@@ -407,5 +418,161 @@ describe("ToDoComponent", () => {
     expect(updatedTaskElement).toBeInTheDocument();
   });
 
+  it("should handle token refresh failure", async () => {
+    // First API call fails with 401
+    mockedAxios.post.mockRejectedValueOnce({ 
+      response: { status: 401 }
+    });
+    
+    // Refresh token call fails
+    mockedAxios.post.mockImplementationOnce((url) => {
+      if (url.includes("/refresh")) {
+        return Promise.reject(new Error("Failed to refresh token"));
+      }
+      return Promise.resolve({ data: {} });
+    });
+    
+    const { getByRole } = await renderWithAct(
+      <TestWrapper>
+        <ToDoComponent />
+      </TestWrapper>
+    );
 
-});
+    await addTestTask({ getByRole });
+
+    // Check for the exact error message from the component
+    await waitFor(() => {
+      expect(console.error).toHaveBeenCalledWith(
+        "Failed to refresh token", 
+        expect.any(Error)
+      );
+    });
+  });
+
+  it("should handle task completion sync errors", async () => {
+    const mockTask = {
+      _id: "1",
+      text: "Test Task",
+      completed: false
+    };
+
+    mockedAxios.get.mockResolvedValueOnce({
+      data: [mockTask]
+    });
+
+    mockedAxios.patch.mockRejectedValueOnce({
+      response: { status: 500 }
+    });
+
+    const { findByTestId } = await renderWithAct(
+      <TestWrapper>
+        <ToDoComponent />
+      </TestWrapper>
+    );
+
+    const completeButton = await findByTestId("complete-button");
+    await act(async () => {
+      fireEvent.click(completeButton);
+    });
+
+    await waitFor(() => {
+      expect(console.error).toHaveBeenCalledWith(
+        "Error updating task completion:",
+        expect.any(Object)
+      );
+    });
+  });
+
+  it("should handle network errors when fetching tasks", async () => {
+    mockedAxios.get.mockRejectedValueOnce({
+      response: { status: 500 }
+    });
+
+    await renderWithAct(
+      <TestWrapper>
+        <ToDoComponent />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      expect(console.error).toHaveBeenCalledWith(
+        "Error fetching tasks",
+        expect.any(Object)
+      );
+    });
+  });
+
+  it("should handle description toggle", async () => {
+    const mockTask = {
+      _id: "1",
+      text: "Test Task",
+      description: "Test Description",
+      completed: false,
+      showDescription: false
+    };
+
+    mockedAxios.get.mockResolvedValueOnce({
+      data: [mockTask]
+    });
+
+    const { findByText } = await renderWithAct(
+      <TestWrapper>
+        <ToDoComponent />
+      </TestWrapper>
+    );
+
+    const toggleButton = await findByText("Show Description");
+    await act(async () => {
+      fireEvent.click(toggleButton);
+    });
+
+    const description = await findByText("Test Description");
+    expect(description).toBeInTheDocument();
+
+    // Toggle description off
+    await act(async () => {
+      fireEvent.click(toggleButton);
+    });
+
+    expect(description).not.toBeInTheDocument();
+  });
+
+  it("should show different status texts based on task sharing state", async () => {
+    const mockTasks = [
+      {
+        _id: "1",
+        text: "Own Task",
+        completed: false
+      },
+      {
+        _id: "2", 
+        text: "Shared By Task",
+        completed: false,
+        sharedBy: "other@user.com"
+      },
+      {
+        _id: "3",
+        text: "Shared With Task", 
+        completed: true,
+        sharedWith: "another@user.com"
+      }
+    ];
+
+    mockedAxios.get.mockResolvedValueOnce({
+      data: mockTasks
+    });
+
+    await renderWithAct(
+      <TestWrapper>
+        <ToDoComponent />
+      </TestWrapper>
+    );
+
+    // Verify status texts with proper waiting
+    await waitFor(() => {
+      expect(screen.getByText("👤 Own task")).toBeInTheDocument();
+      expect(screen.getByText("📥 Shared by: other@user.com")).toBeInTheDocument();
+      expect(screen.getByText("📤 Shared with: another@user.com (Completed)")).toBeInTheDocument();
+    });
+  });
+}); // End of describe block
