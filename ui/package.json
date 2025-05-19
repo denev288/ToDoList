@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "jest",
+    "test-coverage": "jest --coverage --testPathPattern",
     "test-file": "jest --testPathPattern"
   },
   "dependencies": {

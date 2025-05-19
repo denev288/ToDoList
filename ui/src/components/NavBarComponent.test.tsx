@@ -86,16 +86,65 @@ describe("NavBarComponent", () => {
     });
   });
 
-  it("handles logout correctly", async () => {
+  it("toggles dropdown menu when clicking welcome message", async () => {
     render(
       <TestWrapper>
         <NavBarComponent />
       </TestWrapper>
     );
     
-    const logoutButton = screen.getByRole('button', { name: /log out/i });
-    fireEvent.click(logoutButton);
+    const welcomeSpan = screen.getByText((content) => 
+      content.includes('Welcome:') && content.includes('test@test.com')
+    );
 
-    expect(localStorage.getItem("user")).toBeNull();
+    // Click to open dropdown
+    fireEvent.click(welcomeSpan);
+    
+    // Verify dropdown is visible
+    expect(screen.getByRole('button', { name: /profile/i })).toBeInTheDocument();
+    
+    // Click again to close dropdown
+    fireEvent.click(welcomeSpan);
+    
+    // Verify dropdown is hidden
+    expect(screen.queryByRole('button', { name: /profile/i })).not.toBeInTheDocument();
   });
-});
+
+  it("opens edit profile modal when clicking profile button", async () => {
+    render(
+      <TestWrapper></TestWrapper>
+        <NavBarComponent />
+      </TestWrapper>
+    );
+
+    // Open dropdown
+    const welcomeSpan = screen.getByText((content) => 
+      content.includes('Welcome:') && content.includes('test@test.com')
+    );
+    fireEvent.click(welcomeSpan);
+
+    // Click profile button
+    const profileButton = screen.getByRole('button', { name: /profile/i });
+    fireEvent.click(profileButton);
+
+    // Verify modal is opened
+    expect(screen.getByText('Edit Profile')).toBeInTheDocument();
+  });
+
+  it("opens friends list modal when clicking friends button", async () => {
+    render(
+      <TestWrapper>
+        <NavBarComponent />
+      </TestWrapper>
+    );
+
+    // Click friends button
+    const friendsButton = screen.getByRole('button', { name: /find friends/i });
+    fireEvent.click(friendsButton);
+
+    // Verify modal is opened
+    expect(screen.getByText('Find Friends')).toBeInTheDocument();
+  });
+
+  it("handles logout correctly", async () => {
+    render(
