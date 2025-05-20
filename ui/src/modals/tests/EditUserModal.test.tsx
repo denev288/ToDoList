@@ -1,11 +1,11 @@
 import "@testing-library/jest-dom";
 import { fireEvent, render, waitFor, screen } from "@testing-library/react";
-import EditUserModal from "./EditUserModal";
+import EditUserModal from "../EditUserModal";
 import { BrowserRouter } from "react-router-dom";
-import { AuthContextProvider } from "../context/AuthContext";
+import { AuthContextProvider } from "../../context/AuthContext";
 import axios from "axios";
 
-jest.mock("../config", () => ({
+jest.mock("../../config", () => ({
   VITE_APIURL: "https://todolist-jr6y.onrender.com",
 }));
 

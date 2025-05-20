@@ -5,6 +5,7 @@ import { BrowserRouter } from "react-router-dom";
 import { AuthContextProvider } from "../context/AuthContext";
 import axios from "axios";
 
+window.alert = jest.fn();
 // Mock the environment variables
 jest.mock("../config", () => ({
   VITE_APIURL: "https://todolist-jr6y.onrender.com",
