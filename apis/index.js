@@ -9,13 +9,16 @@ const cookieParser = require('cookie-parser');
 
 dotenv.config();
 
-MONGODB_URL = process.env.MONGODB_URL;
-Mongo_url = "mongodb://localhost:27017/todo"
+const isTestEnvironment = process.env.NODE_ENV === 'test';
 
-mongoose.connect(MONGODB_URL, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+// Connect to real database if not in test environment
+if (!isTestEnvironment) {
+  MONGODB_URL = process.env.MONGODB_URL;
+  mongoose.connect(MONGODB_URL, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  });
+}
 
 const app = express();
 
@@ -39,10 +42,14 @@ app.use(express.json());
 app.use("/", userRoutes);
 app.use("/", todoRoutes);
 
-app.listen(3004, () => {
-  console.log("server is running on port 3004");
-});
+// Only start server if not in test environment
+if (!isTestEnvironment) {
+  app.listen(3004, () => {
+    console.log("server is running on port 3004");
+  });
+}
 
+module.exports = app;
 
 
 

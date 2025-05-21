@@ -49,14 +49,14 @@ const sendFriendRequest = async (req, res) => {
     await NotificationModel.create({
       userId: targetUserId,
       type: 'friend_request',
-      message: '',  // Leave empty since we'll use sender info
-      senderEmail: sender.email,  // Add sender email
+      message: '',  
+      senderEmail: sender.email, 
       relatedId: friendRequest._id
     });
 
     res.status(200).json({ message: "Friend request sent successfully" });
   } catch (error) {
-    console.error("Friend request error:", error);  // Add error logging
+    console.error("Friend request error:", error); 
     res.status(500).json({ message: "Error sending friend request", error: error.message });
   }
 };
