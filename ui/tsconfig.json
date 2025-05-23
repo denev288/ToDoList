@@ -6,9 +6,9 @@
   ],
   "compilerOptions": {
     "jsx": "react-jsx",
-    "module": "esnext", 
+    "module": "esnext",
     "esModuleInterop": true,
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "types": ["node", "jest", "@testing-library/jest-dom", "vite/client"]
   },
-  "types": ["node", "jest", "@testing-library/jest-dom", "axios"],
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import "../css/ShareModalStyle.css";
 import axios from "axios";
+import { VITE_APIURL } from "../config";
 
 interface Friend {
   userId: string;
@@ -19,7 +20,7 @@ function ShareModal({ isOpen, onClose, onSubmit, error, currentUserEmail }: Shar
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [friends, setFriends] = useState<Friend[]>([]);
-  const apiUrl = import.meta.env.VITE_APIURL;
+  const apiUrl = VITE_APIURL;
 
   useEffect(() => {
     if (isOpen) {

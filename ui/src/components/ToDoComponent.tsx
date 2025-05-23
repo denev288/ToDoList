@@ -4,13 +4,14 @@ import { useEffect, useState } from "react";
 import { FaRegTrashAlt } from "react-icons/fa";
 import { CiEdit, CiShare2 } from "react-icons/ci";
 import useAuthContext from "../hooks/useAuthContext";
-import TaskModal from "../modals/TaskModal"; 
+import TaskModal from "../modals/TaskModal";
 import ShareModal from "../modals/ShareModal";
+import { VITE_APIURL } from "../config";
 
 interface Task {
   _id: string;
   text: string;
-  description: string; 
+  description: string;
   completed: boolean;
   showDescription?: boolean;
   sharedBy?: string;
@@ -29,11 +30,12 @@ function ToDoComponent() {
   const [sharingTaskId, setSharingTaskId] = useState<string | null>(null);
   const { user } = useAuthContext();
   const [shareError, setShareError] = useState<string>("");
+  const [error, setError] = useState<string | null>(null);
 
-  const apiUrl = import.meta.env.VITE_APIURL;
+  const apiUrl = VITE_APIURL;
 
   function refreshAccessToken() {
-    const userFromStorage = JSON.parse(localStorage.getItem('user') || '{}');
+    const userFromStorage = JSON.parse(localStorage.getItem("user") || "{}");
     const refreshToken = userFromStorage.refreshToken;
 
     if (!refreshToken) {
@@ -48,7 +50,7 @@ function ToDoComponent() {
 
         // Update the user object in localStorage with the new token
         userFromStorage.token = newAccessToken;
-        localStorage.setItem('user', JSON.stringify(userFromStorage));
+        localStorage.setItem("user", JSON.stringify(userFromStorage));
 
         return newAccessToken;
       })
@@ -61,19 +63,20 @@ function ToDoComponent() {
   function fetchTasks() {
     const userFromStorage = JSON.parse(localStorage.getItem("user") || "{}");
     const accessToken = userFromStorage.token;
-  
+
     if (!user || !accessToken) {
       console.error("User is not logged in or token is missing");
       return;
     }
-  
+
     axios
       .get(`${apiUrl}/tasks`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       })
       .then((response) => {
-
-        const fetchedTasks: Task[] = Array.isArray(response.data) ? response.data : [];
+        const fetchedTasks: Task[] = Array.isArray(response.data)
+          ? response.data
+          : [];
         setTasks(fetchedTasks);
       })
       .catch((err) => {
@@ -81,7 +84,7 @@ function ToDoComponent() {
           refreshAccessToken()
             .then((newToken) => {
               return axios.get(`${apiUrl}/tasks`, {
-                headers: { Authorization: `Bearer ${newToken}` }
+                headers: { Authorization: `Bearer ${newToken}` },
               });
             })
             .then((res) => {
@@ -112,7 +115,7 @@ function ToDoComponent() {
 
   function handleOpenEditModal(taskId: string) {
     const task = tasks.find((task) => task._id === taskId);
-    
+
     if (task) {
       setEditingIndex(taskId);
       setEditingTask(task.text);
@@ -139,14 +142,14 @@ function ToDoComponent() {
   }
 
   function handleAddTask(title: string, description: string) {
-    const userFromStorage = JSON.parse(localStorage.getItem('user') || '{}');
+    const userFromStorage = JSON.parse(localStorage.getItem("user") || "{}");
     const accessToken = userFromStorage.token;
 
     if (!user || !accessToken) {
-      alert("Please log in");
+      setError("Please log in");
       return;
     }
-  
+
     const taskExists = tasks.some(
       (task) => task.text.toLowerCase() === title.toLowerCase()
     );
@@ -191,26 +194,26 @@ function ToDoComponent() {
   function saveEditedTask(title: string, description: string) {
     const userFromStorage = JSON.parse(localStorage.getItem("user") || "{}");
     const accessToken = userFromStorage.token;
-  
+
     if (!user || !accessToken) {
       console.error("User is not logged in or token is missing");
       return;
     }
-  
+
     const taskId = editingIndex;
     if (!taskId) return;
-  
+
     const taskIndex = tasks.findIndex((task) => task._id === taskId);
     if (taskIndex === -1) {
       console.error("Task not found");
       return;
     }
-  
+
     if (title.trim() === "") {
       alert("Task cannot be empty");
       return;
     }
-  
+
     if (
       title.trim() === tasks[taskIndex].text &&
       description === tasks[taskIndex].description
@@ -219,7 +222,7 @@ function ToDoComponent() {
       handleCloseEditModal();
       return;
     }
-  
+
     axios
       .patch(
         `${apiUrl}/edit/${taskId}`,
@@ -256,7 +259,10 @@ function ToDoComponent() {
               handleCloseEditModal();
             })
             .catch((refreshErr) => {
-              console.error("Error saving task after token refresh:", refreshErr);
+              console.error(
+                "Error saving task after token refresh:",
+                refreshErr
+              );
             });
         } else {
           console.error("Error updating task:", err);
@@ -267,19 +273,19 @@ function ToDoComponent() {
   function handleShareTask(email: string, message: string) {
     const userFromStorage = JSON.parse(localStorage.getItem("user") || "{}");
     const accessToken = userFromStorage.token;
-  
+
     if (!user || !accessToken) {
       alert("Please log in");
       return;
     }
-  
+
     if (!sharingTaskId) {
       console.error("No task selected for sharing");
       return;
     }
 
     setShareError(""); // Clear previous errors
-  
+
     axios
       .post(
         `${apiUrl}/share/${sharingTaskId}`,
@@ -324,12 +330,12 @@ function ToDoComponent() {
   function deleteTask(taskId: string) {
     const userFromStorage = JSON.parse(localStorage.getItem("user") || "{}");
     const accessToken = userFromStorage.token;
-  
+
     if (!user || !accessToken) {
       alert("Please log in");
       return;
     }
-  
+
     axios
       .delete(`${apiUrl}/delete/${taskId}`, {
         headers: { Authorization: `Bearer ${accessToken}` },
@@ -354,7 +360,10 @@ function ToDoComponent() {
               setTasks(updatedTasks);
             })
             .catch((refreshErr) => {
-              console.error("Error deleting task after token refresh:", refreshErr);
+              console.error(
+                "Error deleting task after token refresh:",
+                refreshErr
+              );
             });
         } else {
           console.error("Error deleting task:", err);
@@ -365,20 +374,20 @@ function ToDoComponent() {
   function taskCompleted(taskId: string) {
     const userFromStorage = JSON.parse(localStorage.getItem("user") || "{}");
     const accessToken = userFromStorage.token;
-  
+
     if (!user || !accessToken) {
       console.error("User is not logged in or token is missing");
       return;
     }
-  
+
     const taskIndex = tasks.findIndex((task) => task._id === taskId);
     if (taskIndex === -1) {
       console.error("Task not found");
       return;
     }
-  
+
     const updatedCompleted = !tasks[taskIndex].completed;
-  
+
     axios
       .patch(
         `${apiUrl}/update/${taskId}`,
@@ -411,7 +420,10 @@ function ToDoComponent() {
               setTasks(updatedTasks);
             })
             .catch((refreshErr) => {
-              console.error("Error updating task completion after token refresh:", refreshErr);
+              console.error(
+                "Error updating task completion after token refresh:",
+                refreshErr
+              );
             });
         } else {
           console.error("Error updating task completion:", err);
@@ -425,40 +437,50 @@ function ToDoComponent() {
       console.error("Task not found:", taskId);
       return;
     }
-  
+
     const updatedTasks = [...tasks];
-    updatedTasks[taskIndex].showDescription = !updatedTasks[taskIndex].showDescription;
+    updatedTasks[taskIndex].showDescription =
+      !updatedTasks[taskIndex].showDescription;
     setTasks(updatedTasks);
   }
 
   function getTaskStatusText(task: Task) {
     if (task.sharedBy) {
-      return `📥 Shared by: ${task.sharedBy}${task.completed ? ` (Completed)` : ''}`;
+      return `📥 Shared by: ${task.sharedBy}${
+        task.completed ? ` (Completed)` : ""
+      }`;
     }
     if (task.sharedWith) {
-      return `📤 Shared with: ${task.sharedWith}${task.completed ? ` (Completed)` : ''}`;
+      return `📤 Shared with: ${task.sharedWith}${
+        task.completed ? ` (Completed)` : ""
+      }`;
     }
-    return '👤 Own task';
+    return "👤 Own task";
   }
 
   return (
     <>
       <div className="add-task">
-        <button className="add-task-button" onClick={handleOpenModal}>
-          Add New Task
+        <button 
+          className="add-task-button" 
+          onClick={handleOpenModal}
+          aria-label="create new task" 
+        >
+          Create New Task
         </button>
       </div>
-      
+
       {/* Add New Task Modal */}
-      <TaskModal 
+      <TaskModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         onSubmit={handleAddTask}
         modalTitle="Add New Task"
+        error={error}
       />
-      
+
       {/* Edit Task Modal */}
-      <TaskModal 
+      <TaskModal
         isOpen={isEditModalOpen}
         onClose={handleCloseEditModal}
         onSubmit={saveEditedTask}
@@ -466,7 +488,7 @@ function ToDoComponent() {
         description={editingDescription}
         modalTitle="Edit Task"
       />
-      
+
       {/* Share Task Modal */}
       <ShareModal
         isOpen={isShareModalOpen}
@@ -479,40 +501,46 @@ function ToDoComponent() {
       <div className="parent">
         <div className="to-do-list">
           <h1>To Do List</h1>
-          <ol>
-            {
-            tasks.filter((task) => !task.completed).length > 0 ? (
-              tasks
-                .filter((task) => !task.completed)
-                .map((task) => (
-                  <li key={task._id}>
+
+          {tasks.filter((task) => !task.completed).length > 0 ? (
+            tasks
+              .filter((task) => !task.completed)
+              .map((task) => (
+                <div key={task._id}>
+                  <li>
                     <div className="task-header">
                       <div className="task-checkbox-title">
                         <input
+                        data-testid="complete-button"
                           type="checkbox"
                           checked={task.completed}
                           onChange={() => taskCompleted(task._id)}
                         />
                         <span
-                          className={`text ${task.completed ? "completed-task" : ""}`}
+                          className={`text ${
+                            task.completed ? "completed-task" : ""
+                          }`}
                         >
                           {task.text}
                         </span>
                       </div>
                       <div className="task-actions">
                         <button
+                          data-testid="share-button"
                           className="edit-button"
                           onClick={() => handleOpenShareModal(task._id)}
                         >
                           <CiShare2 />
                         </button>
                         <button
+                        data-testid="edit-button"
                           className="edit-button"
                           onClick={() => handleOpenEditModal(task._id)}
                         >
                           <CiEdit />
                         </button>
                         <button
+                          data-testid="delete-button"
                           className="delete-button"
                           onClick={() => deleteTask(task._id)}
                         >
@@ -520,18 +548,20 @@ function ToDoComponent() {
                         </button>
                       </div>
                     </div>
-                    
+
                     <p className="task-shared-status">
                       {getTaskStatusText(task)}
                     </p>
 
                     {task.description ? (
                       <div className="task-description">
-                        <button 
-                          className="toggle-description" 
+                        <button
+                          className="toggle-description"
                           onClick={() => toggleDescription(task._id)}
                         >
-                          {task.showDescription ? "Hide Description" : "Show Description"}
+                          {task.showDescription
+                            ? "Hide Description"
+                            : "Show Description"}
                         </button>
                         {task.showDescription && (
                           <div className="description-content">
@@ -539,15 +569,19 @@ function ToDoComponent() {
                           </div>
                         )}
                       </div>
-                    ) : (<p className="description-missing">Description is missing</p>)}
+                    ) : (
+                      <p className="description-missing">
+                        Description is missing
+                      </p>
+                    )}
                   </li>
-                ))
-            ) : (
-              <p>No current tasks</p>
-            )}
-          </ol>
+                </div>
+              ))
+          ) : (
+            <p>No current tasks</p>
+          )}
         </div>
-        
+
         <div className="completed-list">
           <h1>Completed</h1>
           <ol>
@@ -572,18 +606,20 @@ function ToDoComponent() {
                         <FaRegTrashAlt />
                       </button>
                     </div>
-                    
+
                     <p className="task-shared-status">
                       {getTaskStatusText(task)}
                     </p>
 
                     {task.description ? (
                       <div className="task-description">
-                        <button 
-                          className="toggle-description" 
+                        <button
+                          className="toggle-description"
                           onClick={() => toggleDescription(task._id)}
                         >
-                          {task.showDescription ? "Hide Description" : "Show Description"}
+                          {task.showDescription
+                            ? "Hide Description"
+                            : "Show Description"}
                         </button>
                         {task.showDescription && (
                           <div className="description-content">
@@ -591,7 +627,11 @@ function ToDoComponent() {
                           </div>
                         )}
                       </div>
-                    ) : (<p className="description-missing">Description is missing</p>)}
+                    ) : (
+                      <p className="description-missing">
+                        Description is missing
+                      </p>
+                    )}
                   </li>
                 ))
             ) : (

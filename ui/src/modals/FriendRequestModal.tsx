@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import "../css/FriendRequestModalStyle.css";
+import { VITE_APIURL } from "../config";
 
 interface FriendRequestModalProps {
   isOpen: boolean;
@@ -12,7 +13,7 @@ function FriendRequestModal({ isOpen, onClose }: FriendRequestModalProps) {
   const [error, setError] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
 
-  const apiUrl = import.meta.env.VITE_APIURL;
+  const apiUrl = VITE_APIURL;
 
   if (!isOpen) return null;
 

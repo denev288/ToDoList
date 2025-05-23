@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import "../css/FriendsListModalStyle.css";
+import { VITE_APIURL } from "../config";
 
 interface Friend {
   userId: string;
@@ -15,7 +16,7 @@ interface FriendsListModalProps {
 function FriendsListModal({ isOpen, onClose }: FriendsListModalProps) {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [error, setError] = useState("");
-  const apiUrl = import.meta.env.VITE_APIURL;
+  const apiUrl = VITE_APIURL;
 
   useEffect(() => {
     if (isOpen) {

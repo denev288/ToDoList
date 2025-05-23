@@ -8,6 +8,7 @@ interface TaskModalProps {
   title?: string;
   description?: string;
   modalTitle?: string;
+  error?: string | null;
 }
 
 function TaskModal({ 
@@ -16,7 +17,8 @@ function TaskModal({
   onSubmit, 
   title = "", 
   description = "", 
-  modalTitle = "Add New Task" 
+  modalTitle = "Add New Task",
+  error
 }: TaskModalProps) {
   const [taskTitle, setTaskTitle] = useState(title);
   const [taskDescription, setTaskDescription] = useState(description);
@@ -55,6 +57,7 @@ function TaskModal({
     }}>
       <div className="modal-content" onClick={e => e.stopPropagation()}>
         <h2>{modalTitle}</h2>
+        {error && <div className="error-message">{error}</div>}
         <form onSubmit={handleSubmit}>
           <div className="modal-field">
             <label htmlFor="task-title">Title:</label>
@@ -81,7 +84,7 @@ function TaskModal({
               Cancel
             </button>
             <button type="submit" className="add-button">
-              Submit
+              {title ? 'Edit' : 'Add'} 
             </button>
           </div>
         </form>
