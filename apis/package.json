@@ -9,7 +9,7 @@
     "build": "npm install",
     "test:watch": "NODE_ENV=test jest --watch",
     "test:coverage": "NODE_ENV=test jest --coverage",
-    "test:integration": "cross-env NODE_ENV=test MONGODB_URL='mongodb+srv://denev288:Jason288121@cluster0.ziquod3.mongodb.net/todolist-test?retryWrites=true&w=majority&ssl=true' jest --config jest.integration.config.js",
+    "test:integration": "cross-env NODE_ENV=test \"MONGODB_URL=mongodb+srv://denev288:Jason288121@cluster0.ziquod3.mongodb.net/todolist-test?retryWrites=true&w=majority&ssl=true\" jest --config jest.integration.config.js",
     "test:all": "npm run test && npm run test:integration"
   },
   "keywords": [],
