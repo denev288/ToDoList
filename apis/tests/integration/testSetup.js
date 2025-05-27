@@ -45,8 +45,6 @@ const setupTestDatabase = async () => {
     await mongoose.connect(mongoUri, {
       maxPoolSize: 10
     });
-    
-    console.log('Successfully connected to test database');
   } catch (error) {
     console.error('MongoDB Setup Error:', error);
     throw error;
