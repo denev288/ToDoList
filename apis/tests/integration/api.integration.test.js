@@ -6,11 +6,28 @@ describe('API Integration Tests', () => {
   let authToken;
   let userId;
   let testId;
+  let friendToken;  
+  let friendEmail; 
+  let sharedTodoId;
 
   beforeAll(async () => {
     await setupTestDatabase();
     // Get a single ID to use for both user and todos
     testId = await getUniqueIdentifier();
+
+    // Register friend account first
+    const friendData = {
+      name: `Friend User ${testId}`,
+      email: `friend.${testId}@example.com`, 
+      password: 'Friend123!@'
+    };
+
+    const friendResponse = await request(app)
+      .post('/register')
+      .send(friendData);
+
+    friendToken = friendResponse.body.token;
+    friendEmail = friendData.email;
   });
 
   afterAll(async () => {
@@ -114,29 +131,10 @@ describe('API Integration Tests', () => {
       const deletedTodo = checkResponse.body.find(todo => todo._id === todoId);
       expect(deletedTodo).toBeFalsy();
     });
-  });  // end of CRUD Operations
+  }); 
 
   describe('Friend System and Todo Sharing', () => {
-    let friendToken;
-    let friendEmail;
     let sharedTodoId;
-
-    it('should register a friend account', async () => {
-      const friendData = {
-        name: `Friend User ${testId}`,
-        email: `friend.${testId}@example.com`,
-        password: 'Friend123!@'
-      };
-
-      const response = await request(app)
-        .post('/register')
-        .send(friendData);
-
-      friendToken = response.body.token;
-      friendEmail = friendData.email;
-      expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('token');
-    });
 
     it('should send and accept friend request', async () => {
       // First search for the friend by email to get their ID
@@ -211,10 +209,10 @@ describe('API Integration Tests', () => {
       // Wait longer for the share operation to complete
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Verify friend can see the shared todo with better error handling
+      // Verify friend can see the shared todo
       try {
         const friendViewResponse = await request(app)
-          .get('/tasks')  // Changed to /tasks to get all tasks including shared ones
+          .get('/tasks') 
           .set('Authorization', `Bearer ${friendToken}`);
 
         console.log('Friend View Response:', friendViewResponse.body); // Debug log
@@ -231,4 +229,77 @@ describe('API Integration Tests', () => {
       }
     });
   });
+
+  describe('User Authentication Flow', () => {
+    it('should handle login with valid credentials', async () => {
+      const loginData = {
+        email: `test.${testId}@example.com`,
+        password: 'Test123!@'
+      };
+
+      const response = await request(app)
+        .post('/login')
+        .send(loginData);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('token');
+      expect(response.body).toHaveProperty('refreshToken');
+    });
+
+    it('should refresh token successfully', async () => {
+      const loginResponse = await request(app)
+        .post('/login')
+        .send({
+          email: `test.${testId}@example.com`,
+          password: 'Test123!@'
+        });
+
+      const refreshResponse = await request(app)
+        .post('/refresh')
+        .send({ refreshToken: loginResponse.body.refreshToken });
+
+      expect(refreshResponse.status).toBe(200);
+      expect(refreshResponse.body).toHaveProperty('token');
+    });
+  });
+
+  describe('Notification System', () => {
+    beforeEach(async () => {
+      // Ensure friend token is still valid
+      const loginResponse = await request(app)
+        .post('/login')
+        .send({
+          email: friendEmail,
+          password: 'Friend123!@'
+        });
+      friendToken = loginResponse.body.token;
+    });
+
+    it('should create and fetch notifications', async () => {
+      // Friend request should have created a notification
+      const response = await request(app)
+        .get('/notifications')
+        .set('Authorization', `Bearer ${friendToken}`);
+
+      expect(response.status).toBe(200);
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBeGreaterThan(0);
+    });
+
+    it('should mark notifications as read', async () => {
+      const response = await request(app)
+        .post('/notifications/read')
+        .set('Authorization', `Bearer ${friendToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.message).toBe('Notifications marked as read');
+
+      // Verify notifications are marked as read
+      const checkResponse = await request(app)
+        .get('/notifications')
+        .set('Authorization', `Bearer ${friendToken}`);
+
+      expect(checkResponse.body.every(n => n.read === true)).toBe(true);
+    });
+  });  
 });
