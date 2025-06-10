@@ -1,8 +1,7 @@
 import { useState } from "react";
-import axios from "axios";
+import api from '../utils/axiosConfig';
 import useAuthContext from "../hooks/useAuthContext";
 import "../css/EditUserModalStyle.css";
-import { VITE_APIURL } from "../config";
 
 interface EditUserModalProps {
   isOpen: boolean;
@@ -20,8 +19,6 @@ function EditUserModal({ isOpen, onClose, currentUser }: EditUserModalProps) {
   const [error, setError] = useState("");
   const { dispatch } = useAuthContext();
 
-  const apiUrl = VITE_APIURL;
-
   if (!isOpen) return null;
 
   async function handleSubmit(e: React.FormEvent) {
@@ -30,11 +27,7 @@ function EditUserModal({ isOpen, onClose, currentUser }: EditUserModalProps) {
     const userFromStorage = JSON.parse(localStorage.getItem('user') || '{}');
 
     try {
-      const response = await axios.patch(
-        `${apiUrl}/user/update`,
-        { name, email, password },
-        { headers: { Authorization: `Bearer ${userFromStorage.token}` } }
-      );
+      const response = await api.patch('/user/update', { name, email, password });
 
       // Update local storage and auth context with new user data
       const updatedUser = {
@@ -47,38 +40,10 @@ function EditUserModal({ isOpen, onClose, currentUser }: EditUserModalProps) {
       
       onClose();
     } catch (err: any) {
-      if (err.response?.status === 401) {
-        try {
-          const refreshResponse = await axios.post(`${apiUrl}/refresh`, {
-            refreshToken: userFromStorage.refreshToken
-          });
-          
-          // Retry the update with new token
-          const response = await axios.patch(
-            `${apiUrl}/user/update`,
-            { name, email, password },
-            { headers: { Authorization: `Bearer ${refreshResponse.data.token}` } }
-          );
-
-          const updatedUser = {
-            ...userFromStorage,
-            token: refreshResponse.data.token,
-            email: response.data.email,
-            name: response.data.name
-          };
-          localStorage.setItem('user', JSON.stringify(updatedUser));
-          dispatch({ type: 'LOGIN', payload: updatedUser });
-          
-          onClose();
-        } catch (refreshErr: any) {
-          if (refreshErr.response?.data?.message) {
-            setError(refreshErr.response.data.message);
-          } else {
-            setError("Session expired. Please login again.");
-          }
-        }
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
       } else {
-        setError(err.response?.data?.message || "Failed to update user details");
+        setError("Failed to update user details");
       }
     }
   }

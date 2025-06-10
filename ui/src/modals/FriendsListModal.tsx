@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from '../utils/axiosConfig';
 import "../css/FriendsListModalStyle.css";
-import { VITE_APIURL } from "../config";
+
 
 interface Friend {
   userId: string;
@@ -15,8 +15,8 @@ interface FriendsListModalProps {
 
 function FriendsListModal({ isOpen, onClose }: FriendsListModalProps) {
   const [friends, setFriends] = useState<Friend[]>([]);
-  const [error, setError] = useState("");
-  const apiUrl = VITE_APIURL;
+  const [error] = useState("");
+  
 
   useEffect(() => {
     if (isOpen) {
@@ -25,69 +25,23 @@ function FriendsListModal({ isOpen, onClose }: FriendsListModalProps) {
   }, [isOpen]);
 
   async function fetchFriends() {
-    const userFromStorage = JSON.parse(localStorage.getItem('user') || '{}');
     try {
-      const response = await axios.get(`${apiUrl}/user`, {
-        headers: { Authorization: `Bearer ${userFromStorage.token}` }
-      });
-      setFriends(response.data.friendsList || []);
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        try {
-          const refreshResponse = await axios.post(`${apiUrl}/refresh`, {
-            refreshToken: userFromStorage.refreshToken
-          });
-          
-          const response = await axios.get(`${apiUrl}/user`, {
-            headers: { Authorization: `Bearer ${refreshResponse.data.token}` }
-          });
-          
-          const updatedUser = {
-            ...userFromStorage,
-            token: refreshResponse.data.token
-          };
-          localStorage.setItem('user', JSON.stringify(updatedUser));
-          setFriends(response.data.friendsList || []);
-        } catch (refreshErr) {
-          setError("Session expired. Please login again.");
-        }
-      } else {
-        setError("Failed to fetch friends list");
+      const response = await api.get('/user');
+      if (response.data.friendsList) {
+        setFriends(response.data.friendsList);
       }
+    } catch (err) {
+      console.error("Error fetching friends:", err);
     }
   }
 
   async function unfollowFriend(friendId: string) {
-    const userFromStorage = JSON.parse(localStorage.getItem('user') || '{}');
     try {
- 
-      await axios.delete(`${apiUrl}/friends/${friendId}`, {
-        headers: { Authorization: `Bearer ${userFromStorage.token}` }
-      });
-      setFriends(friends.filter(friend => friend.userId !== friendId));
+      await api.delete(`/friends/${friendId}`);
+      await fetchFriends(); // Refresh friends list
+      postMessage("Friend removed successfully");
     } catch (err: any) {
-      if (err.response?.status === 401) {
-        try {
-          const refreshResponse = await axios.post(`${apiUrl}/refresh`, {
-            refreshToken: userFromStorage.refreshToken
-          });          
-
-          await axios.delete(`${apiUrl}/friends/${friendId}`, {
-            headers: { Authorization: `Bearer ${refreshResponse.data.token}` }
-          });
-          
-          const updatedUser = {
-            ...userFromStorage,
-            token: refreshResponse.data.token
-          };
-          localStorage.setItem('user', JSON.stringify(updatedUser));
-          setFriends(friends.filter(friend => friend.userId !== friendId));
-        } catch (refreshErr) {
-          setError("Session expired. Please login again.");
-        }
-      } else {
-        setError(err.response?.data?.message || "Failed to unfollow friend");
-      }
+      postMessage(err.response?.data?.message || "Error unfollowing friend");
     }
   }
 

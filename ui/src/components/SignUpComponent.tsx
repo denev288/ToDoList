@@ -1,10 +1,9 @@
 import "../css/SignUpComponentSryle.css";
 import "bootstrap/dist/css/bootstrap.min.css";
-import axios from "axios";
 import { useState } from "react";
 import  useAuthContext  from "../hooks/useAuthContext";
 import { Link, useNavigate } from "react-router-dom";
-import { VITE_APIURL } from "../config";
+import api from '../utils/axiosConfig';
 
 function SignUpComponent() {
   const [name, setName] = useState("");
@@ -14,12 +13,10 @@ function SignUpComponent() {
   const [errorMessage, setErrorMessage] = useState("");
   const { dispatch } = useAuthContext();
 
-  const apiUrl = VITE_APIURL;
-
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    axios
-      .post(`${apiUrl}/register`, { name, email, password })
+    api
+      .post(`/register`, { name, email, password })
       .then((result) => {
         if (result) {
           localStorage.setItem("user", JSON.stringify(result.data));
@@ -30,7 +27,7 @@ function SignUpComponent() {
         }
       })
       .catch((error) => {
-        if (error.response) {
+        if (error.response?.data?.message) {
           setErrorMessage(error.response.data.message);
         } else {
           setErrorMessage("An error occurred. Please try again.");

@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import "../css/ShareModalStyle.css";
-import axios from "axios";
+import api from '../utils/axiosConfig';
 import { VITE_APIURL } from "../config";
+import { logError } from '../utils/errorLogger';
 
 interface Friend {
   userId: string;
@@ -33,12 +34,11 @@ function ShareModal({ isOpen, onClose, onSubmit, error, currentUserEmail }: Shar
     const refreshToken = userFromStorage.refreshToken;
 
     if (!refreshToken) {
-      console.error("Refresh token is missing");
       return Promise.reject("Refresh token is missing");
     }
 
-    return axios
-      .post(`${apiUrl}/refresh`, { refreshToken })
+    return api
+      .post(`/refresh`, { refreshToken })
       .then((res) => {
         const newAccessToken = res.data.token;
         userFromStorage.token = newAccessToken;
@@ -46,7 +46,10 @@ function ShareModal({ isOpen, onClose, onSubmit, error, currentUserEmail }: Shar
         return newAccessToken;
       })
       .catch((err) => {
-        console.error("Failed to refresh token", err);
+        logError(err, { 
+          component: 'ShareModal', 
+          operation: 'refreshToken'
+        });
         throw err;
       });
   }
@@ -55,8 +58,16 @@ function ShareModal({ isOpen, onClose, onSubmit, error, currentUserEmail }: Shar
     const userFromStorage = JSON.parse(localStorage.getItem('user') || '{}');
     const accessToken = userFromStorage.token;
 
+    if (!accessToken) {
+      logError("No access token found", {
+        component: 'ShareModal',
+        operation: 'fetchUserDetails'
+      });
+      return;
+    }
+
     try {
-      const response = await axios.get(`${apiUrl}/user`, {
+      const response = await api.get(`/user`, {
         headers: { Authorization: `Bearer ${accessToken}` }
       });
       
@@ -67,7 +78,7 @@ function ShareModal({ isOpen, onClose, onSubmit, error, currentUserEmail }: Shar
       if (err.response?.status === 401) {
         try {
           const newToken = await refreshAccessToken();
-          const response = await axios.get(`${apiUrl}/user`, {
+          const response = await api.get(`/user`, {
             headers: { Authorization: `Bearer ${newToken}` }
           });
           
@@ -75,10 +86,24 @@ function ShareModal({ isOpen, onClose, onSubmit, error, currentUserEmail }: Shar
             setFriends(response.data.friendsList);
           }
         } catch (refreshErr) {
-          console.error('Error fetching user details after token refresh:', refreshErr);
+          logError(refreshErr, { 
+            component: 'ShareModal', 
+            operation: 'fetchUserDetailsAfterTokenRefresh',
+            originalError: err.message,
+            tokenStatus: {
+              hadToken: !!accessToken,
+              tokenError: err.response?.data?.error
+            }
+          });
+          // Notify user about authentication issue
+          alert("Your session has expired. Please log in again.");
         }
       } else {
-        console.error('Error fetching user details:', err);
+        logError(err, { 
+          component: 'ShareModal', 
+          operation: 'fetchUserDetails',
+          tokenPresent: !!accessToken
+        });
       }
     }
   }
