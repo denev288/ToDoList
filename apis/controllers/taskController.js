@@ -65,12 +65,6 @@ async function shareTask(req, res) {
         ? `${sender.email} shared a task with you: "${task.text}". Message: ${req.body.message}`
         : `${sender.email} shared a task with you: "${task.text}"`;
 
-      console.log('Creating notification:', {
-        userId: recipient._id,
-        message: notificationMessage,
-        taskId: sharedTask._id
-      });
-
       const notification = await NotificationModel.create({
         userId: recipient._id,
         type: 'task',
@@ -79,8 +73,6 @@ async function shareTask(req, res) {
         relatedId: sharedTask._id,
         senderEmail: sender.email
       });
-
-      console.log('Notification created:', notification);
 
     } catch (notifErr) {
       console.error('Error creating notification:', notifErr);
