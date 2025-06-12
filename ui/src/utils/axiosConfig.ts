@@ -34,7 +34,6 @@ axiosInstance.interceptors.request.use(
 );
 
 const logErrorToServer = async (error: any, additionalInfo?: ErrorInfo) => {
-  console.log('Attempting to log error to server...'); // Debug log
 
   const errorData = {
     error: error.toString(),

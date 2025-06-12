@@ -71,7 +71,7 @@ function LogInComponent() {
               </label>
               <input
                 id="password-input"
-                type="password"
+                type="text"
                 placeholder="Enter Password"
                 autoComplete="off"
                 name="password"

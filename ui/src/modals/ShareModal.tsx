@@ -120,6 +120,7 @@ function ShareModal({ isOpen, onClose, onSubmit, error, currentUserEmail }: Shar
     }
     
     onSubmit(email, message);
+    setMessage(""); // Reset message field after submission
   }
 
   if (!isOpen) return null;

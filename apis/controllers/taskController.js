@@ -1,5 +1,6 @@
 const User = require("../models/UserModel");
 const Todo = require("../models/Todo");
+const NotificationModel = require("../models/NotificationModel"); 
 
 // Share task controller
 async function shareTask(req, res) {
@@ -57,6 +58,35 @@ async function shareTask(req, res) {
     task.sharedWith = recipient.email;
     await task.save();
     await sharedTask.save();
+
+    // Create notification for the recipient
+    try {
+      const notificationMessage = req.body.message 
+        ? `${sender.email} shared a task with you: "${task.text}". Message: ${req.body.message}`
+        : `${sender.email} shared a task with you: "${task.text}"`;
+
+      console.log('Creating notification:', {
+        userId: recipient._id,
+        message: notificationMessage,
+        taskId: sharedTask._id
+      });
+
+      const notification = await NotificationModel.create({
+        userId: recipient._id,
+        type: 'task',
+        message: notificationMessage,
+        read: false,
+        relatedId: sharedTask._id,
+        senderEmail: sender.email
+      });
+
+      console.log('Notification created:', notification);
+
+    } catch (notifErr) {
+      console.error('Error creating notification:', notifErr);
+      // Continue execution even if notification fails
+      // But log the error for debugging
+    }
 
     res.status(200).json({ message: "Task shared successfully" });
   } catch (err) {
