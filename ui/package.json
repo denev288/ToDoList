@@ -12,13 +12,16 @@
     "test-coverage": "jest --coverage --testPathPattern",
     "test-file": "jest --testPathPattern",
     "test:integration": "cross-env NODE_ENV=test vitest integration",
-    "test:all": "npm run test && npm run test:integration"
+    "test:all": "npm run test && npm run test:integration",
+    "encrypt-env": "node ../scripts/crypto.js encrypt .env",
+    "decrypt-env": "node ../scripts/crypto.js decrypt .env.enc"
   },
   "dependencies": {
     "@dnd-kit/sortable": "^10.0.0",
     "@formkit/drag-and-drop": "^0.4.2",
     "axios": "^1.9.0",
     "bootstrap": "^5.3.3",
+    "dotenv": "^16.5.0",
     "react": "^19.0.0",
     "react-bootstrap": "^2.10.9",
     "react-dom": "^19.0.0",
@@ -62,5 +65,10 @@
     "setupFilesAfterEnv": [
       "<rootDir>/src/setupTests.ts"
     ]
-  }
+  },
+  "description": "This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.",
+  "main": "eslint.config.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }
