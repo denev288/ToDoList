@@ -1,8 +1,8 @@
-import axios from "axios";
+import api from '../utils/axiosConfig';
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import useAuthContext from "../hooks/useAuthContext";
-import { VITE_APIURL } from '../config';
+// import { VITE_APIURL } from '../config';
 
 function LogInComponent() {
   const [errorMessage, setErrorMessage] = useState("");
@@ -10,28 +10,35 @@ function LogInComponent() {
   const [email, setEmail] = useState("");
   const navigate = useNavigate();
  
-  const apiUrl = VITE_APIURL;
+  // const apiUrl = VITE_APIURL;
 
   const { dispatch } = useAuthContext();
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    axios
-      .post(`${apiUrl}/login`, { email, password })
-      .then((result) => {
-        if (result) {
-          localStorage.setItem("user", JSON.stringify(result.data));
-          // localStorage.setItem('accessToken', result.data.token);
-          localStorage.setItem('refreshToken', result.data.refreshToken);
+    
+    // Basic validation
+    if (!email.trim()) {
+      setErrorMessage("Email is required");
+      return;
+    }
+    if (!password.trim()) {
+      setErrorMessage("Password is required");
+      return;
+    }
 
-          //update auth context
+    api
+      .post(`/login`, { email, password })
+      .then((result) => {
+        if (result?.data) {
+          localStorage.setItem("user", JSON.stringify(result.data));
+          localStorage.setItem('refreshToken', result.data.refreshToken);
           dispatch({ type: "LOGIN", payload: result.data });
           navigate("/todo");
         }
       })
-
       .catch((error) => {
-        if (error.response) {
+        if (error.response?.data?.message) {
           setErrorMessage(error.response.data.message);
         } else {
           setErrorMessage("An error occurred. Please try again.");
@@ -64,7 +71,7 @@ function LogInComponent() {
               </label>
               <input
                 id="password-input"
-                type="password"
+                type="text"
                 placeholder="Enter Password"
                 autoComplete="off"
                 name="password"

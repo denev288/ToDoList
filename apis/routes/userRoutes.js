@@ -1,5 +1,5 @@
 const express = require('express');
-const { loginUser, createRegistration, refreshToken, searchUsers, getCurrentUser, updateUser } = require('../controllers/userController');
+const { loginUser, createRegistration, refreshToken, searchUsers, getCurrentUser, updateUser, logClientError } = require('../controllers/userController');
 const { getNotifications, markNotificationsAsRead, clearNotifications } = require('../controllers/notificationController');
 const { sendFriendRequest, getPendingRequests, handleFriendRequest, unfollowFriend } = require('../controllers/friendRequestController');
 const requireAuth = require("../middleware/requireAuth");
@@ -10,9 +10,10 @@ const router = express.Router();
 router.post('/login', loginUser);
 router.post('/register', createRegistration);
 router.post('/refresh', refreshToken);
+router.post('/log-error', logClientError); 
 
-// Protected routes
-router.use(requireAuth);
+router.use(requireAuth); // All routes after this will require authentication
+
 router.post('/search', searchUsers); 
 router.get('/notifications', getNotifications);
 router.post('/notifications/read', markNotificationsAsRead);

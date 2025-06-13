@@ -1,2 +1,5 @@
 ui/.env
 apis/.env
+
+scripts/.env
+*.env.enc

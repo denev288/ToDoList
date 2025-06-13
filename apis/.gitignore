@@ -12,11 +12,13 @@ dist
 dist-ssr
 *.local
 .env
+!.env.enc
 
 
 # Environment variables
 /apis/.env
 .env
+!.env.enc
 
 
 # Editor directories and files

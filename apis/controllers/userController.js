@@ -237,6 +237,39 @@ const updateUser = async (req, res) => {
   }
 };
 
+const logClientError = async (req, res) => {
+  try {
+    const { error, errorInfo } = req.body;
+    
+    // Sanitize and extract key info
+    const sanitizedError = {
+      message: error?.toString()?.substring(0, 500),
+      context: {
+        component: errorInfo?.component,
+        operation: errorInfo?.request?.url,
+        method: errorInfo?.request?.method,
+        status: errorInfo?.response?.status,
+        errorMessage: errorInfo?.response?.data?.message,
+        timestamp: errorInfo?.timestamp || new Date().toISOString()
+      }
+    };
+    
+    // Standard log format
+    console.log('\n=== Client Error Log ===');
+    console.log('Time:', sanitizedError.context.timestamp);
+    console.log('Component:', sanitizedError.context.component);
+    console.log('Operation:', `${sanitizedError.context.method} ${sanitizedError.context.operation}`);
+    console.log('Error:', sanitizedError.message);
+    console.log('Details:', JSON.stringify(sanitizedError.context, null, 2));
+    console.log('=====================\n');
+
+    res.status(200).json({ message: 'Error logged successfully' });
+  } catch (err) {
+    console.error('Error logging client error:', err);
+    res.status(500).json({ message: 'Error logging failed' });
+  }
+};
+
 module.exports = {
   loginUser,
   createRegistration,
@@ -246,4 +279,5 @@ module.exports = {
   searchUsers,
   getCurrentUser,
   updateUser,
+  logClientError,
 };

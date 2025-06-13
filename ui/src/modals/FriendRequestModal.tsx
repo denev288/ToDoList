@@ -71,9 +71,17 @@ function FriendRequestModal({ isOpen, onClose }: FriendRequestModalProps) {
             setError("");
           })
           .catch((refreshErr) => {
-            console.error('Error after token refresh:', refreshErr);
-            setError("Session expired. Please login again.");
+            if (refreshErr.response?.status === 404) {
+              setError("User not found");
+              setSearchResults([]);
+            } else {
+              console.error('Error after token refresh:', refreshErr);
+              setError("Session expired. Please login again.");
+            }
           });
+      } else if (err.response?.status === 404) {
+        setError("User not found");
+        setSearchResults([]);
       } else {
         console.error('Search error:', err);
         setError(err.response?.data?.message || "Error searching for user");
