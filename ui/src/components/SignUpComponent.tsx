@@ -1,27 +1,37 @@
 import "../css/SignUpComponentSryle.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { useState } from "react";
-import  useAuthContext  from "../hooks/useAuthContext";
+import useAuthContext from "../hooks/useAuthContext";
 import { Link, useNavigate } from "react-router-dom";
-import api from '../utils/axiosConfig';
+import api from "../utils/axiosConfig";
+import {
+  MDBBtn,
+  MDBContainer,
+  MDBRow,
+  MDBCol,
+  MDBCard,
+  MDBCardBody,
+  MDBInput,
+
+} from "mdb-react-ui-kit";
 
 function SignUpComponent() {
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
-  const navigate = useNavigate();
   const [errorMessage, setErrorMessage] = useState("");
+  const navigate = useNavigate();
   const { dispatch } = useAuthContext();
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const name = `${firstName} ${lastName}`.trim();
     api
       .post(`/register`, { name, email, password })
       .then((result) => {
         if (result) {
           localStorage.setItem("user", JSON.stringify(result.data));
-
-          //update auth context
           dispatch({ type: "LOGIN", payload: result.data });
           navigate("/login");
         }
@@ -36,65 +46,101 @@ function SignUpComponent() {
   }
 
   return (
-    <div className="d-flex justify-content-center align-items-center vh-100">
-      <div className="bg-light p-3 rounded w-80">
-        <h2>Register</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-3">
-            <label htmlFor="name">
-              <strong>Name</strong>
-            </label>
-            <input
-              type="text"
-              placeholder="Enter Name"
-              autoComplete="off"
-              name="name"
-              value={name}
-              className="form-control rounded-0"
-              onChange={(e) => setName(e.target.value)}
-            />
-            <label htmlFor="email">
-              <strong>Email</strong>
-            </label>
-            <input
-              type="text"
-              placeholder="Enter Email"
-              autoComplete="off"
-              name="email"
-              value={email}
-              className="form-control rounded-0"
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <div className="mb-3">
-              <label htmlFor="email">
-                <strong>Password</strong>
-              </label>
-              <input
-                type="text"
-                placeholder="Enter Password"
-                autoComplete="off"
-                name="password"
-                value={password}
-                className="form-control rounded-0"
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-            {errorMessage && <p style={{ color: "red" }}>{errorMessage}</p>}
-            <button type="submit" className="btn btn-success w-100 rounded-0">
-              Register
-            </button>
-          </div>
-        </form>
-        <p>Already Have an Account?</p>
-        <Link
-          type="submit"
-          to={"/login"}
-          className="btn btn-success w-100 rounded-0"
+    <MDBContainer
+      fluid
+      className="p-4 background-radial-gradient overflow-hidden "
+    >
+      <MDBRow>
+        <MDBCol
+          md="6"
+          className="text-center text-md-start d-flex flex-column justify-content-center"
         >
-          Login
-        </Link>
-      </div>
-    </div>
+          <h1
+            className="my-5 display-3 fw-bold ls-tight px-3"
+            style={{ color: "hsl(218, 81%, 95%)" }}
+          >
+            The best App <br />
+            <span style={{ color: "hsl(218, 81%, 75%)" }}>
+              for your business
+            </span>
+          </h1>
+          <p className="px-3" style={{ color: "hsl(218, 81%, 85%)" }}>
+            Lorem ipsum dolor sit amet consectetur adipisicing elit. Eveniet,
+            itaque accusantium odio, soluta, corrupti aliquam quibusdam tempora
+            at cupiditate quis eum maiores libero veritatis? Dicta facilis sint
+            aliquid ipsum atque?
+          </p>
+        </MDBCol>
+        <MDBCol md="6" className="position-relative">
+          <div
+            id="radius-shape-1"
+            className="position-absolute rounded-circle shadow-5-strong"
+          ></div>
+          <div
+            id="radius-shape-2"
+            className="position-absolute shadow-5-strong"
+          ></div>
+          <MDBCard className="my-5 bg-glass">
+            <MDBCardBody className="p-5">
+              <form onSubmit={handleSubmit}>
+                <MDBInput
+                  wrapperClass="mb-4"
+                  label="First Name"
+                  id="form1"
+                  type="input"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  autoComplete="off"
+                  name="firstName"
+                />
+                <MDBInput
+                  wrapperClass="mb-4"
+                  label="Last Name"
+                  id="form2"
+                  type="input"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  autoComplete="off"
+                  name="lastName"
+                />
+
+                <MDBInput
+                  wrapperClass="mb-4"
+                  label="Email"
+                  id="form3"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="off"
+                  name="email"
+                />
+                <MDBInput
+                  wrapperClass="mb-4"
+                  label="Password"
+                  id="form4"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="off"
+                  name="password"
+                />
+                {errorMessage && <p style={{ color: "red" }}>{errorMessage}</p>}
+                <MDBBtn className="w-100 mb-4" type="submit">
+                  Sign up
+                </MDBBtn>
+              </form>
+              <p className="mt-4">Already have an account?</p>
+              <Link
+                to="/login"
+                className="btn btn-default border w-100 bg-light rounded-0"
+              >
+                Login
+              </Link>
+            </MDBCardBody>
+          </MDBCard>
+        </MDBCol>
+      </MDBRow>
+    </MDBContainer>
   );
 }
 

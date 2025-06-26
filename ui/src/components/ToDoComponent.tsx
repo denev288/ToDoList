@@ -456,184 +456,190 @@ function ToDoComponent() {
 
   return (
     <>
-      <div className="add-task">
-        <button 
-          className="add-task-button" 
-          onClick={handleOpenModal}
-          aria-label="create new task" 
-        >
-          Create New Task
-        </button>
+      <div className="background-radial-gradient">
+        <div id="radius-shape-1-todo" />
+        <div id="radius-shape-2-todo" />
       </div>
+      <div className="todo-main-content">
+        <div className="add-task">
+          <button 
+            className="add-task-button" 
+            onClick={handleOpenModal}
+            aria-label="create new task" 
+          >
+            Create New Task
+          </button>
+        </div>
 
-      {/* Add New Task Modal */}
-      <TaskModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        onSubmit={handleAddTask}
-        modalTitle="Add New Task"
-        error={error}
-      />
+        {/* Add New Task Modal */}
+        <TaskModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          onSubmit={handleAddTask}
+          modalTitle="Add New Task"
+          error={error}
+        />
 
-      {/* Edit Task Modal */}
-      <TaskModal
-        isOpen={isEditModalOpen}
-        onClose={handleCloseEditModal}
-        onSubmit={saveEditedTask}
-        title={editingTask}
-        description={editingDescription}
-        modalTitle="Edit Task"
-      />
+        {/* Edit Task Modal */}
+        <TaskModal
+          isOpen={isEditModalOpen}
+          onClose={handleCloseEditModal}
+          onSubmit={saveEditedTask}
+          title={editingTask}
+          description={editingDescription}
+          modalTitle="Edit Task"
+        />
 
-      {/* Share Task Modal */}
-      <ShareModal
-        isOpen={isShareModalOpen}
-        onClose={handleCloseShareModal}
-        onSubmit={handleShareTask}
-        error={shareError}
-        currentUserEmail={user?.email}
-      />
+        {/* Share Task Modal */}
+        <ShareModal
+          isOpen={isShareModalOpen}
+          onClose={handleCloseShareModal}
+          onSubmit={handleShareTask}
+          error={shareError}
+          currentUserEmail={user?.email}
+        />
 
-      <div className="parent">
-        <div className="to-do-list">
-          <h1>To Do List</h1>
+        <div className="parent">
+          <div className="to-do-list">
+            <h1>To Do List</h1>
 
-          {tasks.filter((task) => !task.completed).length > 0 ? (
-            tasks
-              .filter((task) => !task.completed)
-              .map((task) => (
-                <div key={task._id}>
-                  <li>
-                    <div className="task-header">
-                      <div className="task-checkbox-title">
-                        <input
-                        data-testid="complete-button"
-                          type="checkbox"
-                          checked={task.completed}
-                          onChange={() => taskCompleted(task._id)}
-                        />
-                        <span
-                          className={`text ${
-                            task.completed ? "completed-task" : ""
-                          }`}
-                        >
-                          {task.text}
-                        </span>
+            {tasks.filter((task) => !task.completed).length > 0 ? (
+              tasks
+                .filter((task) => !task.completed)
+                .map((task) => (
+                  <div key={task._id}>
+                    <li>
+                      <div className="task-header">
+                        <div className="task-checkbox-title">
+                          <input
+                          data-testid="complete-button"
+                            type="checkbox"
+                            checked={task.completed}
+                            onChange={() => taskCompleted(task._id)}
+                          />
+                          <span
+                            className={`text ${
+                              task.completed ? "completed-task" : ""
+                            }`}
+                          >
+                            {task.text}
+                          </span>
+                        </div>
+                        <div className="task-actions">
+                          <button
+                            data-testid="share-button"
+                            className="edit-button"
+                            onClick={() => handleOpenShareModal(task._id)}
+                          >
+                            <CiShare2 />
+                          </button>
+                          <button
+                          data-testid="edit-button"
+                            className="edit-button"
+                            onClick={() => handleOpenEditModal(task._id)}
+                          >
+                            <CiEdit />
+                          </button>
+                          <button
+                            data-testid="delete-button"
+                            className="delete-button"
+                            onClick={() => deleteTask(task._id)}
+                          >
+                            <FaRegTrashAlt />
+                          </button>
+                        </div>
                       </div>
-                      <div className="task-actions">
+
+                      <p className="task-shared-status">
+                        {getTaskStatusText(task)}
+                      </p>
+
+                      {task.description ? (
+                        <div className="task-description">
+                          <button
+                            className="toggle-description"
+                            onClick={() => toggleDescription(task._id)}
+                          >
+                            {task.showDescription
+                              ? "Hide Description"
+                              : "Show Description"}
+                          </button>
+                          {task.showDescription && (
+                            <div className="description-content">
+                              {task.description}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="description-missing">
+                          Description is missing
+                        </p>
+                      )}
+                    </li>
+                  </div>
+                ))
+            ) : (
+              <p>No current tasks</p>
+            )}
+          </div>
+
+          <div className="completed-list">
+            <h1>Completed</h1>
+            <ol>
+              {tasks.filter((task) => task.completed).length > 0 ? (
+                tasks
+                  .filter((task) => task.completed)
+                  .map((task) => (
+                    <li key={task._id}>
+                      <div className="task-header">
+                        <div className="task-checkbox-title">
+                          <input
+                            type="checkbox"
+                            checked={task.completed}
+                            onChange={() => taskCompleted(task._id)}
+                          />
+                          <span className="completed-task">{task.text}</span>
+                        </div>
                         <button
-                          data-testid="share-button"
-                          className="edit-button"
-                          onClick={() => handleOpenShareModal(task._id)}
-                        >
-                          <CiShare2 />
-                        </button>
-                        <button
-                        data-testid="edit-button"
-                          className="edit-button"
-                          onClick={() => handleOpenEditModal(task._id)}
-                        >
-                          <CiEdit />
-                        </button>
-                        <button
-                          data-testid="delete-button"
-                          className="delete-button"
+                          className="completed-delete-button"
                           onClick={() => deleteTask(task._id)}
                         >
                           <FaRegTrashAlt />
                         </button>
                       </div>
-                    </div>
 
-                    <p className="task-shared-status">
-                      {getTaskStatusText(task)}
-                    </p>
-
-                    {task.description ? (
-                      <div className="task-description">
-                        <button
-                          className="toggle-description"
-                          onClick={() => toggleDescription(task._id)}
-                        >
-                          {task.showDescription
-                            ? "Hide Description"
-                            : "Show Description"}
-                        </button>
-                        {task.showDescription && (
-                          <div className="description-content">
-                            {task.description}
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="description-missing">
-                        Description is missing
+                      <p className="task-shared-status">
+                        {getTaskStatusText(task)}
                       </p>
-                    )}
-                  </li>
-                </div>
-              ))
-          ) : (
-            <p>No current tasks</p>
-          )}
-        </div>
 
-        <div className="completed-list">
-          <h1>Completed</h1>
-          <ol>
-            {tasks.filter((task) => task.completed).length > 0 ? (
-              tasks
-                .filter((task) => task.completed)
-                .map((task) => (
-                  <li key={task._id}>
-                    <div className="task-header">
-                      <div className="task-checkbox-title">
-                        <input
-                          type="checkbox"
-                          checked={task.completed}
-                          onChange={() => taskCompleted(task._id)}
-                        />
-                        <span className="completed-task">{task.text}</span>
-                      </div>
-                      <button
-                        className="completed-delete-button"
-                        onClick={() => deleteTask(task._id)}
-                      >
-                        <FaRegTrashAlt />
-                      </button>
-                    </div>
-
-                    <p className="task-shared-status">
-                      {getTaskStatusText(task)}
-                    </p>
-
-                    {task.description ? (
-                      <div className="task-description">
-                        <button
-                          className="toggle-description"
-                          onClick={() => toggleDescription(task._id)}
-                        >
-                          {task.showDescription
-                            ? "Hide Description"
-                            : "Show Description"}
-                        </button>
-                        {task.showDescription && (
-                          <div className="description-content">
-                            {task.description}
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="description-missing">
-                        Description is missing
-                      </p>
-                    )}
-                  </li>
-                ))
-            ) : (
-              <p>No completed tasks</p>
-            )}
-          </ol>
+                      {task.description ? (
+                        <div className="task-description">
+                          <button
+                            className="toggle-description"
+                            onClick={() => toggleDescription(task._id)}
+                          >
+                            {task.showDescription
+                              ? "Hide Description"
+                              : "Show Description"}
+                          </button>
+                          {task.showDescription && (
+                            <div className="description-content">
+                              {task.description}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="description-missing">
+                          Description is missing
+                        </p>
+                      )}
+                    </li>
+                  ))
+              ) : (
+                <p>No completed tasks</p>
+              )}
+            </ol>
+          </div>
         </div>
       </div>
     </>
